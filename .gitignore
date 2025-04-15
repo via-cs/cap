@@ -1,6 +1,9 @@
-TimeSeriesLibrary/
-CATP_2024/
-CAP/savedModels/
-CAP/CAP/savedModels/
-CAP/dataset/BirdMigration/
-CAP/dataset/SolarPower/
+
+__pycache__/
+.ipynb_checkpoints/
+.pytest_cache/
+cap.egg-info/
+.coverage/
+dataset/BirdMigration/
+dataset/SolarPower/
+Logs/
