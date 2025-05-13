@@ -7,3 +7,9 @@ cap.egg-info/
 dataset/BirdMigration/
 dataset/SolarPower/
 Logs/
+tutorials/checkpoints/
+tutorials/runs/
+runs/
+checkpoints/
+tutorials/saved_models/
+

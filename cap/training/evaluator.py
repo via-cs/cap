@@ -88,7 +88,7 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
                 x_enc, x_dec, y = batch
                 x_enc, x_dec, y = x_enc.to(device), x_dec.to(device), y.to(device)
                 outputs = model(x_enc, None, x_dec, None)
-                loss = criterion(outputs, y)
+                loss = criterion(outputs[:, -y.shape[1]:, :], y)
             
             total_loss += loss.item()
             num_batches += 1

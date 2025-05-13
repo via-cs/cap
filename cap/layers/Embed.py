@@ -52,7 +52,8 @@ class TokenEmbedding(nn.Module):
 
     def forward(self, x):
 
-        x = (x - x.mean(dim=1, keepdim=True)) / (x.std(dim=1, keepdim=True) + 1e-6)  # Normalize input
+        # Normalize input with unbiased=False to avoid degrees of freedom warning
+        x = (x - x.mean(dim=1, keepdim=True)) / (x.std(dim=1, keepdim=True, unbiased=False) + 1e-6)
         x = torch.nan_to_num(x, nan=0.0, posinf=1e3, neginf=-1e3) # Replace NaNs with 0.0
         x = self.tokenConv(x.permute(0, 2, 1)).transpose(1, 2)  # Apply Conv1d
 

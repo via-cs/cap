@@ -87,7 +87,7 @@ def train_model(train_loader, valid_loader, input_dim, output_dim, seq_len, pred
                     x_enc, x_dec, y = batch
                     x_enc, x_dec, y = x_enc.to(device), x_dec.to(device), y.to(device)
                     outputs = model(x_enc, None, x_dec, None)
-                    loss = criterion(outputs[:, -pred_len:, :], y)
+                    loss = criterion(outputs, y)
                 
                 valid_loss += loss.item()
                 

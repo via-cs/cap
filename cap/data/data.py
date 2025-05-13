@@ -170,15 +170,8 @@ def collate_fn_informer(batch):
         - y (Tensor) : [batch, pred_len, 1]
     """
     ipt_batch, opt_batch = zip(*batch)
-    ipt_tensor = torch.stack([torch.tensor(ipt, dtype=torch.float32) for ipt in ipt_batch])
-    opt_tensor = torch.stack([torch.tensor(opt, dtype=torch.float32) for opt in opt_batch])
-
-    # Convert to batched tensors
-    # x_enc = torch.stack(i)  # Shape: (batch_size, seq_len, input_dim)
-    # x_mark_enc = torch.stack(x_mark_enc)  # Shape: (batch_size, seq_len, time_dim)
-    # x_dec = torch.stack(x_dec)  # Shape: (batch_size, pred_len, input_dim)
-    # x_mark_dec = torch.stack(x_mark_dec)  # Shape: (batch_size, pred_len, time_dim)
-    # y = torch.stack(y)  # Shape: (batch_size, pred_len, 1)
+    ipt_tensor = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
+    opt_tensor = torch.stack([opt.clone().detach() for opt in opt_batch])
 
     return ipt_tensor, ipt_tensor, opt_tensor
 
@@ -189,9 +182,9 @@ def collate_fn_autoformer(batch):
     """ 
     ipt_batch, opt_batch = zip(*batch)
 
-    # Convert to tensor
-    x_enc = torch.stack([torch.tensor(ipt, dtype=torch.float32) for ipt in ipt_batch])
-    y = torch.stack([torch.tensor(opt, dtype=torch.float32) for opt in opt_batch])
+    # Convert to tensor using clone().detach() instead of torch.tensor()
+    x_enc = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
+    y = torch.stack([opt.clone().detach() for opt in opt_batch])
 
     label_len = x_enc.shape[1] // 2  # Ensure label_len is valid
     # x_enc = x_enc[:, :, 0].unsqueeze(-1)
@@ -218,8 +211,8 @@ def collate_fn(batch):
     Custom collate function to reshape batch data into (seq_len, batch_size, feature_dim).
     """
     ipt_batch, opt_batch = zip(*batch)
-    ipt_tensor = torch.stack([torch.tensor(ipt, dtype=torch.float32) for ipt in ipt_batch])
-    opt_tensor = torch.stack([torch.tensor(opt, dtype=torch.float32) for opt in opt_batch])
+    ipt_tensor = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
+    opt_tensor = torch.stack([opt.clone().detach() for opt in opt_batch])
     # Permute to shape: (seq_len, batch_size, feature_dim)
     ipt_tensor = ipt_tensor.permute(1, 0, 2)
     opt_tensor = opt_tensor.permute(1, 0, 2)

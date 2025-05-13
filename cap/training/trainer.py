@@ -54,7 +54,7 @@ def train_model(train_loader, valid_loader, input_dim, output_dim, seq_len, pred
     elif model_type == 'fedformer':
         model = FEDformer(input_dim, input_dim, pred_len, output_dim, seq_len, 
                          label_len=12, d_model=512, n_heads=8, d_ff=2048, 
-                         num_layers=3, dropout=0.1).to(device)
+                          e_layers=2, d_layers=1, dropout=0.1).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -84,7 +84,7 @@ def train_model(train_loader, valid_loader, input_dim, output_dim, seq_len, pred
                 x_enc, x_dec, y = x_enc.to(device), x_dec.to(device), y.to(device)
                 # Pass None for time features (x_mark_enc and x_mark_dec)
                 outputs = model(x_enc, None, x_dec, None)
-                loss = criterion(outputs, y)
+                loss = criterion(outputs[:, -pred_len:, :], y)
 
             loss.backward()
             optimizer.step()
@@ -104,7 +104,7 @@ def train_model(train_loader, valid_loader, input_dim, output_dim, seq_len, pred
                     x_enc, x_dec, y = batch
                     x_enc, x_dec, y = x_enc.to(device), x_dec.to(device), y.to(device)
                     outputs = model(x_enc, None, x_dec, None)
-                    loss = criterion(outputs, y)
+                    loss = criterion(outputs[:, -pred_len:, :], y)
                 
                 valid_loss += loss.item()
 
