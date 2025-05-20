@@ -1,8 +1,10 @@
 import os
+import random
+import pandas as pd
 import numpy as np
 import torch
-from random import shuffle
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
+
 
 def _init_dim(path):
     """
@@ -108,7 +110,62 @@ class LazySequenceDataset(Dataset):
             ipt = _normalize_data(ipt)
             opt = _normalize_data(opt)
         return torch.tensor(ipt, dtype=torch.float32), torch.tensor(opt, dtype=torch.float32)
+    
 
+class CSVSequenceDataset(torch.utils.data.Dataset):
+    """
+    Lazy PyTorch Dataset that:
+     - auto-loads a CSV (first column = timestamp, last = target)
+     - builds seq_len-step input (prev-target + all context cols)
+       and pred_len-step output (target only)
+     - does per-sample z-normalization if requested
+    """
+    def __init__(self, csv_path,
+                 seq_len=3, pred_len=3,
+                 normalization=True):
+        df = pd.read_csv(csv_path)
+        cols = df.columns.tolist()
+        # auto-detect:
+        #   timestamp = cols[0], context = cols[1:-1], target = cols[-1]
+        self.context_cols = cols[1:-1]
+        self.target_col  = cols[-1]
+
+        # raw arrays
+        self.context = df[self.context_cols].values.astype(float)   # shape (N, C)
+        self.target  = df[self.target_col].values.astype(float)     # shape (N,)
+        self.N       = len(df)
+
+        self.seq_len  = seq_len
+        self.pred_len = pred_len
+        self.norm     = normalization
+
+        # valid start indices: i in [1, N - (seq_len+pred_len)]
+        last = self.N - (seq_len + pred_len)
+        self.starts = list(range(1, last+1)) if last >= 1 else []
+
+    def __len__(self):
+        return len(self.starts)
+
+    def __getitem__(self, idx):
+        s = self.starts[idx]
+        # build input sequence
+        inp = []
+        for t in range(s, s + self.seq_len):
+            # prev-target + all context features
+            inp.append([ self.target[t-1], *self.context[t] ])
+        # build output sequence
+        out = [[ self.target[t] ]
+               for t in range(s + self.seq_len,
+                              s + self.seq_len + self.pred_len)]
+
+        if self.norm:
+            inp = _normalize_data(inp)
+            out = _normalize_data(out)
+
+        return (
+          torch.tensor(inp, dtype=torch.float32),    # [seq_len, C+1]
+          torch.tensor(out, dtype=torch.float32)     # [pred_len, 1]
+        )
 
 
 class Corpus:
@@ -126,7 +183,7 @@ class Corpus:
         base_dataset = LazySequenceDataset(path, normalization=True)
         total_samples = len(base_dataset)
         indices = list(range(total_samples))
-        shuffle(indices)
+        random.shuffle(indices)
         train_cnt = int(total_samples * train_size)
         valid_cnt = int(total_samples * valid_size)
 
@@ -143,109 +200,63 @@ class Corpus:
         if len(self.train) == 0 or len(self.valid) == 0 or len(self.test) == 0:
             raise ValueError("Empty dataset split! Adjust the train/valid/test ratios.")
 
-
-def collate_fn_informer(batch):
+def default_collate_fn(batch):
     """
-    Custom collate function for Informer model.
-    Expects batch to contain:
-    - past input features
-    - past timestamps
-    - future input features (zero-padded)
-    - future timestamps
-    - target values
-    
-    Args:
-        batch (list of tuples): Each tuple contains:
-            - x_enc (Tensor) : [seq_len, input_dim]
-            - x_mark_enc (Tensor) : [seq_len, time_dim]
-            - x_dec (Tensor) : [pred_len, input_dim]
-            - x_mark_dec (Tensor) : [pred_len, time_dim]
-            - y (Tensor) : [pred_len, 1]
-
-    Returns:
-        - x_enc (Tensor) : [batch, seq_len, input_dim]
-        - x_mark_enc (Tensor) : [batch, seq_len, time_dim]
-        - x_dec (Tensor) : [batch, pred_len, input_dim]
-        - x_mark_dec (Tensor) : [batch, pred_len, time_dim]
-        - y (Tensor) : [batch, pred_len, 1]
+    Returns batch of raw (X, Y) pairs without model-specific logic.
     """
-    ipt_batch, opt_batch = zip(*batch)
-    ipt_tensor = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
-    opt_tensor = torch.stack([opt.clone().detach() for opt in opt_batch])
+    X, Y = zip(*batch)
+    X = torch.stack(X)
+    Y = torch.stack(Y)
+    return X, Y  # shapes: [batch, seq_len, in_dim], [batch, pred_len, out_dim]
 
-    return ipt_tensor, ipt_tensor, opt_tensor
-
-
-def collate_fn_autoformer(batch):
+def get_dataloaders(path,
+                    batch_size=32,
+                    shuffle=True,
+                    train_size=0.8,
+                    valid_size=0.1,
+                    test_size=0.1,
+                    model_type='lstm',
+                    normalization=True,
+                    seq_len=None,
+                    pred_len=None):
     """
-    Custom collate function to reshape batch data into (seq_len, batch_size, feature_dim).
-    """ 
-    ipt_batch, opt_batch = zip(*batch)
-
-    # Convert to tensor using clone().detach() instead of torch.tensor()
-    x_enc = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
-    y = torch.stack([opt.clone().detach() for opt in opt_batch])
-
-    label_len = x_enc.shape[1] // 2  # Ensure label_len is valid
-    # x_enc = x_enc[:, :, 0].unsqueeze(-1)
-    # print(x_enc.shape)
-
-    # **Create `x_dec`**
-    x_dec = torch.cat([
-        x_enc[:, -label_len:, 0].unsqueeze(-1),  # Take last `label_len` values
-        torch.zeros_like(y)  # Placeholder zeros
-    ], dim=1)
-
-    # print(y)
-
-    # print(x_enc.shape, x_dec.shape, y.shape)
-
-    # **Fix Permute Order**
-    # Autoformer expects (batch_size, seq_len, feature_dim) not (batch_size, feature_dim, seq_len)
-    # Remove previous `permute` operation
-    return x_enc, x_dec, y
-
-
-def collate_fn(batch):
+    Detects .csv → uses CSVSequenceDataset;
+    else falls back to TXT-based Corpus.
     """
-    Custom collate function to reshape batch data into (seq_len, batch_size, feature_dim).
-    """
-    ipt_batch, opt_batch = zip(*batch)
-    ipt_tensor = torch.stack([ipt.clone().detach() for ipt in ipt_batch])
-    opt_tensor = torch.stack([opt.clone().detach() for opt in opt_batch])
-    # Permute to shape: (seq_len, batch_size, feature_dim)
-    ipt_tensor = ipt_tensor.permute(1, 0, 2)
-    opt_tensor = opt_tensor.permute(1, 0, 2)
-    return ipt_tensor, opt_tensor
+    if path.lower().endswith('.csv'):
+        if seq_len is None:
+            seq_len = 3
+        if pred_len is None:
+            pred_len = 3
 
+        ds = CSVSequenceDataset(path,
+                                seq_len=seq_len,
+                                pred_len=pred_len,
+                                normalization=normalization)
+        N    = len(ds)
+        idxs = list(range(N))
+        random.shuffle(idxs)
+        n1 = int(N * train_size)
+        n2 = int(N * valid_size)
 
-def get_dataloaders(path, batch_size=32, shuffle=True, train_size=0.8, valid_size=0.1, test_size=0.1, model_type='lstm', normalization=True):
-    """
-    Creates DataLoaders for training, validation, and testing.
-    Args:
-        path (str): Path to the dataset file.
-        batch_size (int): Batch size for the DataLoader.
-        shuffle (bool): Whether to shuffle the dataset.
-    Returns:
-        tuple: (train_loader, valid_loader, test_loader)
-    """
-    corpus = Corpus(path, train_size, valid_size, test_size, normalization=normalization)
-    if model_type in ['lstm', 'autoformer', 'informer']:
-        if model_type == 'autoformer':
-            train_loader = DataLoader(corpus.train, batch_size=batch_size, shuffle=shuffle, num_workers=4, collate_fn=collate_fn_autoformer)
-            valid_loader = DataLoader(corpus.valid, batch_size=batch_size, shuffle=False, num_workers=4, collate_fn=collate_fn_autoformer, drop_last=True)
-            test_loader = DataLoader(corpus.test, batch_size=1, shuffle=False, num_workers=4, collate_fn=collate_fn_autoformer)
-        elif model_type == 'informer' or model_type == 'fedformer':
-            train_loader = DataLoader(corpus.train, batch_size=batch_size, shuffle=shuffle, num_workers=4, collate_fn=collate_fn_informer)
-            valid_loader = DataLoader(corpus.valid, batch_size=batch_size, shuffle=False, num_workers=4, collate_fn=collate_fn_informer, drop_last=True)        
-            test_loader = DataLoader(corpus.test, batch_size=1, shuffle=False, num_workers=4, collate_fn=collate_fn_informer)
-        else: 
-            train_loader = DataLoader(corpus.train, batch_size=batch_size, shuffle=shuffle, num_workers=4, collate_fn=collate_fn)
-            valid_loader = DataLoader(corpus.valid, batch_size=batch_size, shuffle=False, num_workers=4, collate_fn=collate_fn, drop_last=True)
-            test_loader = DataLoader(corpus.test, batch_size=1, shuffle=False, num_workers=4, collate_fn=collate_fn)
+        train_ds = Subset(ds, idxs[:n1])
+        valid_ds = Subset(ds, idxs[n1:n1+n2])
+        test_ds  = Subset(ds, idxs[n1+n2:])
+
+        ds_train, ds_valid, ds_test = train_ds, valid_ds, test_ds
+        in_dim   = 1 + len(ds.context_cols)
+        out_dim  = 1
+        seq_len  = ds.seq_len
+        pred_len = ds.pred_len
     else:
-        train_loader = DataLoader(corpus.train, batch_size=batch_size, shuffle=shuffle, num_workers=4)
-        valid_loader = DataLoader(corpus.valid, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=True)
-        test_loader = DataLoader(corpus.test, batch_size=1, shuffle=False, num_workers=4)
+        corpus = Corpus(path, train_size, valid_size, test_size, normalization=normalization)
+        ds_train, ds_valid, ds_test = corpus.train, corpus.valid, corpus.test
+        in_dim, out_dim, seq_len, pred_len, _ = _init_dim(path)
 
-    return train_loader, valid_loader, test_loader
+    # now build the three DataLoaders with your existing collate logic
+    return (
+    DataLoader(ds_train, batch_size=batch_size, shuffle=shuffle,  num_workers=4, collate_fn=default_collate_fn),
+    DataLoader(ds_valid, batch_size=batch_size, shuffle=False, num_workers=4, collate_fn=default_collate_fn, drop_last=True),
+    DataLoader(ds_test,  batch_size=1,          shuffle=False, num_workers=4, collate_fn=default_collate_fn)
+)
+    

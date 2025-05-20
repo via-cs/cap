@@ -26,6 +26,6 @@ jupyterlab>=3.0.0  # If using Jupyter Notebooks
 scikit-learn
 reformer-pytorch==1.4.4
 patool==1.12
-scipy==1.10.1
-sktime==0.16.1
+scipy>=1.10.1
+sktime>=0.16.1
 sympy==1.11.1

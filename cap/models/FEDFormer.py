@@ -104,6 +104,30 @@ class FEDformer(nn.Module):
             projection=nn.Linear(d_model, c_out, bias=True)
         )
 
+    def prepare_batch(self, batch):
+        """
+        Prepares (X, Y) batch for FEDformer. Returns ((x_enc, x_mark_enc, x_dec, x_mark_dec), Y)
+        """
+        X, Y = batch
+        label_len = self.label_len
+        pred_len = self.pred_len
+
+        # Encoder input
+        x_enc = X
+
+        # Decoder input: last `label_len` of X plus zeros
+        x_dec = torch.cat([
+            X[:, -label_len:, :],
+            torch.zeros(X.size(0), pred_len, X.size(2)).to(X.device)
+        ], dim=1)
+
+        # Fake time features (just like Autoformer)
+        x_mark_enc = torch.zeros(X.size(0), x_enc.size(1), 4).to(X.device)
+        x_mark_dec = torch.zeros(X.size(0), x_dec.size(1), 4).to(X.device)
+
+        return (x_enc, x_mark_enc, x_dec, x_mark_dec), Y
+
+    
     def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """
         Forecasts the next `pred_len` values given input sequences.

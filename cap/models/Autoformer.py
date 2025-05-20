@@ -3,9 +3,9 @@ import torch.nn as nn
 from ..layers.Embed import DataEmbedding_wo_pos
 from ..layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
 from ..layers.Autoformer_EncDec import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp
+from .base import BaseTimeSeriesModel
 
-
-class Autoformer(nn.Module):
+class Autoformer(BaseTimeSeriesModel):
     """
     Autoformer for Time-Series Forecasting
     """
@@ -78,6 +78,25 @@ class Autoformer(nn.Module):
             projection=nn.Linear(d_model, output_dim, bias=True)
         )
 
+    def prepare_batch(self, batch):
+        X, Y = batch
+        label_len = self.label_len
+        pred_len = self.pred_len
+
+        x_enc = X
+        x_dec = torch.cat([
+            X[:, -label_len:, :],
+            torch.zeros(X.size(0), pred_len, X.size(2)).to(X.device)
+        ], dim=1)
+
+        # Replace x_mark with dummy time embeddings with correct shape
+        x_mark_enc = torch.zeros(X.size(0), x_enc.size(1), 4).to(X.device)  # Expecting 4 time features
+        x_mark_dec = torch.zeros(X.size(0), x_dec.size(1), 4).to(X.device)
+
+        return (x_enc, x_mark_enc, x_dec, x_mark_dec), Y
+
+
+
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """
         Autoformer forward pass for forecasting.
@@ -93,7 +112,7 @@ class Autoformer(nn.Module):
         """
         # Decomposition: Trend & Seasonal components
         mean = torch.mean(x_enc, dim=1).unsqueeze(1).repeat(1, self.pred_len, 1)
-        zeros = torch.zeros([x_dec.shape[0], self.pred_len, x_dec.shape[2]]).to(x_dec.device)
+        zeros = torch.zeros([x_dec.shape[0], self.pred_len, 1]).to(x_dec.device)
 
 
         seasonal_init, trend_init = self.decomp(x_enc)
@@ -118,5 +137,7 @@ class Autoformer(nn.Module):
         # print(f"seasonal_part+trend: {(seasonal_part+trend_part).shape}, trend_part: {trend_part.shape}")
 
         # Final output (trend + seasonal)
-        return trend_part[:, :, 0].unsqueeze(-1) + seasonal_part
+        output = trend_part[:, :, 0].unsqueeze(-1) + seasonal_part
+        return output[:, -self.pred_len:, :]  # Match target shape
+
         
