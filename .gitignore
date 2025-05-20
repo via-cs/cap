@@ -15,3 +15,6 @@ tutorials/saved_models/
 
 venv/
 venv/
+cap/venv
+.DS_Store
+.vscode/
