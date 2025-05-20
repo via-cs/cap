@@ -1,0 +1,18 @@
+dataset:
+  path: "cap/dataset/ElectricityTransformer/et_data.txt"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+
+model:
+  type: "lstm"
+  hidden_dim: 128
+  num_layers: 2
+  dropout: 0.1
+
+training:
+  epochs: 50
+  learning_rate: 0.001
+  patience: 5
+  device: "cuda"

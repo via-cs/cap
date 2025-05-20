@@ -1,0 +1,15 @@
+
+__pycache__/
+.ipynb_checkpoints/
+.pytest_cache/
+cap.egg-info/
+.coverage/
+dataset/BirdMigration/
+dataset/SolarPower/
+Logs/
+tutorials/checkpoints/
+tutorials/runs/
+runs/
+checkpoints/
+tutorials/saved_models/
+

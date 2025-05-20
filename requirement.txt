@@ -1,0 +1,31 @@
+# Core dependencies
+numpy>=1.21.0
+pandas>=1.3.0
+
+# Machine Learning/Deep Learning
+torch>=2.0.0  # For PyTorch
+torchvision>=0.15.0  # If using PyTorch models for vision tasks
+transformers>=4.30.0  # Hugging Face Transformers, if needed for NLP or similar tasks
+scikit-learn>=1.0.0
+
+# Data Loading and Preprocessing
+opencv-python>=4.5.3  # If working with image data
+
+# Evaluation and Metrics
+matplotlib>=3.4.0  # For visualization
+seaborn>=0.11.0  # For advanced visualizations
+
+# Logging and Utilities
+tqdm>=4.62.0  # For progress bars
+argparse>=1.4.0  # If using command-line argument parsing
+tensorboard>=2.0.0  # For logging and visualization
+pyyaml>=6.0.1
+
+# Optional Dependencies
+jupyterlab>=3.0.0  # If using Jupyter Notebooks
+scikit-learn
+reformer-pytorch==1.4.4
+patool==1.12
+scipy>=1.10.1
+sktime>=0.16.1
+sympy==1.11.1
