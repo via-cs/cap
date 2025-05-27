@@ -4,8 +4,10 @@ import torch.nn.functional as F
 from ..layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
 from ..layers.SelfAttention_Family import ProbAttention, AttentionLayer
 from ..layers.Embed import DataEmbedding
+from .base import BaseTimeSeriesModel
 
-class Informer(nn.Module):
+
+class Informer(BaseTimeSeriesModel):
     """
     Informer model optimized for forecasting (long & short-term).
     """
@@ -60,6 +62,30 @@ class Informer(nn.Module):
             norm_layer=nn.LayerNorm(d_model),
             projection=nn.Linear(d_model, 1, bias=True)  # Output shape: (B, seq, 1)
         )
+
+    def prepare_batch(self, batch):
+        """
+        Prepare encoder/decoder inputs for Informer.
+        """
+        X, Y = batch  # X: [B, seq_len, in_dim], Y: [B, pred_len, out_dim]
+        label_len = self.label_len
+        pred_len = self.pred_len
+
+        # x_enc: raw input
+        x_enc = X
+
+        # decoder input: last label_len of the target + zeros
+        dec_hist = X[:, -label_len:, :]  # [B, label_len, 7]
+        dec_pad = torch.zeros(X.size(0), pred_len, X.size(2)).to(X.device)  # [B, pred_len, 7]
+        x_dec = torch.cat([dec_hist, dec_pad], dim=1)  # [B, label_len + pred_len, 7]
+
+
+        # Time features can be zeros
+        x_mark_enc = torch.zeros_like(x_enc)
+        x_mark_dec = torch.zeros_like(x_dec)
+
+        return (x_enc, x_mark_enc, x_dec, x_mark_dec), Y
+
 
     def long_forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         enc_out = self.enc_embedding(x_enc, x_mark_enc)

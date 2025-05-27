@@ -28,7 +28,13 @@ def main():
     # Load configuration
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-    
+
+    # Check CUDA availability and fall back to CPU if needed
+    cfg_dev = config['training']['device']
+    if cfg_dev.lower() == 'cuda' and not torch.cuda.is_available():
+        print("Warning: CUDA requested but not available. Falling back to CPU.")
+        config['training']['device'] = 'cpu'
+
     # Override config with command line arguments if provided
     if args.model_type:
         config['model']['type'] = args.model_type
@@ -44,12 +50,30 @@ def main():
     print(f"Training: {config['training']['epochs']} epochs, {config['training']['device']}")
 
     # Get dataloaders
+    # Default lengths
+    seq_len = 3
+    pred_len = 3
+
+    # Override for Autoformer (before passing to dataloader!)
+    if config['model']['type'].lower() == 'autoformer':
+        print("Autoformer detected — overriding sequence and prediction lengths for stability.")
+        seq_len = 96
+        pred_len = 24
+
+    # Get dataloaders
     train_loader, valid_loader, test_loader = get_dataloaders(
         path=config['dataset']['path'],
         batch_size=config['dataset']['batch_size'],
+        shuffle=True,
+        train_size=config['dataset']['train_size'],
+        valid_size=config['dataset']['valid_size'],
+        test_size=config['dataset']['test_size'],
         model_type=config['model']['type'],
-        normalization=True
+        normalization=config['dataset'].get('normalization', True),
+        seq_len=seq_len,
+        pred_len=pred_len
     )
+
 
     # Get input and output dimensions from the first batch
     for batch in train_loader:
@@ -59,6 +83,11 @@ def main():
         seq_len = inputs.shape[1]
         pred_len = targets.shape[1]
         break
+
+    if config['model']['type'].lower() == 'autoformer':
+        print("Autoformer detected — overriding sequence and prediction lengths for stability.")
+        seq_len = 96
+        pred_len = 24
 
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")
