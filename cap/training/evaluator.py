@@ -59,7 +59,7 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
     return model
 
 
-def evaluate_model(model, test_loader, device="cpu", model_type="lstm"):
+def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
     """
     Evaluate a trained model on test_loader. Returns average MSE.
     Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, etc.
