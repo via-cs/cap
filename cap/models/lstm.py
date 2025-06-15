@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from ..layers.Embed import DataEmbedding
-from .base import BaseTimeSeriesModel
+from ..utils.base import BaseTimeSeriesModel
 
 class TimeSeriesLSTM(BaseTimeSeriesModel):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers=2, dropout=0.1):

@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
+from sklearn.preprocessing import StandardScaler
 
 
 def _init_dim(path):
@@ -139,6 +140,13 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
         self.pred_len = pred_len
         self.norm     = normalization
 
+        if self.norm:
+            # global target scaler
+            self.y_mean = float(self.target.mean())
+            self.y_std  = float(self.target.std())
+            if self.y_std == 0.0:
+                self.y_std = 1.0
+
         # valid start indices: i in [1, N - (seq_len+pred_len)]
         last = self.N - (seq_len + pred_len)
         self.starts = list(range(1, last+1)) if last >= 1 else []
@@ -157,15 +165,51 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
         out = [[ self.target[t] ]
                for t in range(s + self.seq_len,
                               s + self.seq_len + self.pred_len)]
-
+        
         if self.norm:
+            # per-sample normalize inputs (as before)
             inp = _normalize_data(inp)
-            out = _normalize_data(out)
+            # **global** normalize outputs
+            # out is list of [ [y1], [y2], ... ] → shape (pred_len,1)
+            out_arr = np.array(out, dtype=np.float32)
+            out = ((out_arr - self.y_mean) / self.y_std).tolist()
 
         return (
           torch.tensor(inp, dtype=torch.float32),    # [seq_len, C+1]
           torch.tensor(out, dtype=torch.float32)     # [pred_len, 1]
         )
+    
+class FedformerSequenceDataset(CSVSequenceDataset):
+    """
+    Like CSVSequenceDataset, but applies a global StandardScaler fit on the entire
+    train split’s inputs—and then reuses that same scaler for valid/test.
+    """
+    def __init__(self, csv_path, seq_len=3, pred_len=3):
+        # turn off the built-in per-sample normalization
+        super().__init__(csv_path, seq_len=seq_len, pred_len=pred_len, normalization=False)
+
+        # --- 1) gather ALL input sequences as one big array to fit the scaler ---
+        all_X = []
+        for i in range(len(self)):
+            X, _ = super().__getitem__(i)       # [seq_len, features]
+            all_X.append(X.numpy())
+        # stack into shape (N * seq_len, features)
+        arr = np.concatenate(all_X, axis=0)     # shape (total_time_steps, features)
+
+        # --- 2) fit StandardScaler on that array ---
+        self.scaler = StandardScaler().fit(arr)
+
+    def __getitem__(self, idx):
+        # get the raw (un-normalized) data
+        X, Y = super().__getitem__(idx)         # X: [seq_len, features], Y: [pred_len, 1]
+
+        # apply the fitted scaler to X
+        # reshape → (seq_len, feat) → (seq_len*feat, ) then back
+        seq_len, feat = X.shape
+        X_scaled = self.scaler.transform(X.numpy().reshape(-1, feat))  # (seq_len*1, feat)
+        X_scaled = X_scaled.reshape(seq_len, feat)
+
+        return torch.tensor(X_scaled, dtype=torch.float32), Y
 
 
 class Corpus:
@@ -228,6 +272,9 @@ def get_dataloaders(path,
             seq_len = 3
         if pred_len is None:
             pred_len = 3
+
+        if model_type.lower() == 'fedformer':
+            ds = FedformerSequenceDataset(path, seq_len=seq_len, pred_len=pred_len)
 
         ds = CSVSequenceDataset(path,
                                 seq_len=seq_len,
