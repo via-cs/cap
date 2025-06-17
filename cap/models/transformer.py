@@ -51,3 +51,11 @@ class Transformer(nn.Module):
         forecast_out = self.projection(enc_out[:, -self.pred_len:, :])  # (batch_size, pred_len, output_dim)
 
         return forecast_out
+    
+    def prepare_batch(self, batch):
+        """
+        Prepares (X, Y) batch for Transformer. Returns (X,), Y so model(*X) == model(X[0])
+        """
+        X, Y = batch
+        return (X,), Y
+

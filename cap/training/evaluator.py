@@ -59,38 +59,46 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
     return model
 
 
-def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", 
-                  model_type='lstm'):
+def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
     """
-    Evaluates a time series forecasting model on test data.
-
-    Args:
-        model (nn.Module): The trained model
-        test_loader: DataLoader for test dataset
-        device (str): Device to evaluate on ('cuda' or 'cpu')
-        model_type (str): Type of model being evaluated
-
-    Returns:
-        float: Mean Squared Error (MSE) loss
+    Evaluate a trained model on test_loader. Returns average MSE.
+    Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, etc.
     """
-    criterion = nn.MSELoss()
+    model_type = model_type.lower()
+    model.to(device).eval()
+    criterion = nn.MSELoss(reduction='mean')
     total_loss = 0.0
-    num_batches = 0
+    n_samples = 0
 
     with torch.no_grad():
         for batch in test_loader:
-            if model_type in ['lstm', 'transformer']:
-                inputs, targets = batch
-                inputs, targets = inputs.to(device), targets.to(device)
-                outputs = model(inputs)
-                loss = criterion(outputs, targets)
-            else:  # autoformer, informer, fedformer
-                x_enc, x_dec, y = batch
-                x_enc, x_dec, y = x_enc.to(device), x_dec.to(device), y.to(device)
-                outputs = model(x_enc, None, x_dec, None)
-                loss = criterion(outputs[:, -y.shape[1]:, :], y)
-            
-            total_loss += loss.item()
-            num_batches += 1
+            # move all tensors in the batch to device
+            batch = tuple(t.to(device) for t in batch)
 
-    return total_loss / len(test_loader) if num_batches > 0 else float('inf') 
+            # use the model's .prepare_batch to unpack and handle model-specific logic
+            inputs, target = model.prepare_batch(batch)
+            output = model(*inputs)
+
+            # LSTM returns all timesteps → keep only the final pred_len steps
+            if model_type == 'lstm':
+                pred_len = target.shape[1]
+                output = output[:, -pred_len:, :]
+            
+            if model_type == 'fedformer':
+                # slice off extra feature channels, keep only the 1-d target
+                output = output[..., :1]
+            if model_type == 'timesnet':
+                # slice off extra feature channels, keep only the 1-d target
+                output = output[..., :1]
+
+            # compute MSE per sample
+            # output & target have shape [B, pred_len, feat]
+            batch_size = target.size(0)
+            loss = criterion(output, target) * batch_size
+
+            total_loss += loss.item()
+            n_samples += batch_size
+
+    avg_mse = total_loss / n_samples
+    print(f"Test MSE: {avg_mse:.4f}")
+    return avg_mse

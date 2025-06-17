@@ -58,7 +58,7 @@ def main():
             
             # Get model dimensions from data
             sample_batch = next(iter(train_loader))
-            if args.model in ['lstm', 'transformer']:
+            if args.model in ['lstm', 'transformer', 'timesnet']:
                 input_dim = sample_batch[0].shape[-1]
                 output_dim = sample_batch[1].shape[-1]
                 seq_len = sample_batch[0].shape[1]
