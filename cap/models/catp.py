@@ -11,6 +11,7 @@ from .FEDFormer import FEDformer
 from .Informer import Informer
 from .transformer import Transformer
 from .lstm import TimeSeriesLSTM
+from .TimesNet import TimesNet
 
 def available_models():
     return {
@@ -18,7 +19,8 @@ def available_models():
         'lstm': TimeSeriesLSTM,
         'informer': Informer,
         'autoformer': Autoformer,
-        'fedformer': FEDformer
+        'fedformer': FEDformer,
+        'timesnet': TimesNet
     }
 
 class ManagerModel(nn.Module):
@@ -115,7 +117,7 @@ class WorkerWrapper(nn.Module):
         # Store pred_len from model args
         self.pred_len = model_args.get('pred_len', None)
         
-    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None):
+    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, target=None):
         """
         Standardized forward pass that handles different model interfaces.
         
@@ -124,10 +126,30 @@ class WorkerWrapper(nn.Module):
             x_mark_enc: Optional temporal features for encoder
             x_dec: Optional decoder input
             x_mark_dec: Optional temporal features for decoder
+            target: Optional target tensor (used for prepare_batch if available)
             
         Returns:
             Model predictions
         """
+        # Check if model has prepare_batch method (new interface)
+        if hasattr(self.model, 'prepare_batch'):
+            # Use the new standardized interface
+            # If target is provided, use it; otherwise create dummy target
+            if target is not None:
+                batch = (x_enc, target)
+            else:
+                # Create dummy target with correct shape for prepare_batch
+                if self.pred_len is not None:
+                    dummy_target = torch.zeros((x_enc.shape[0], self.pred_len, x_enc.shape[2]), 
+                                             device=x_enc.device, dtype=x_enc.dtype)
+                else:
+                    dummy_target = torch.zeros_like(x_enc)
+                batch = (x_enc, dummy_target)
+            
+            inputs, _ = self.model.prepare_batch(batch)
+            return self.model(*inputs)
+        
+        # Fallback to old interface handling
         if hasattr(self.model, 'predict'):
             return self.model.predict(x_enc, x_mark_enc, x_dec, x_mark_dec)
         
@@ -166,23 +188,156 @@ class WorkerWrapper(nn.Module):
 
 def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Dict[str, Type[nn.Module]]) -> List[WorkerWrapper]:
     """
-    Creates a pool of worker models based on configuration.
-    
-    Args:
-        model_configs: List of model configurations
-        available_models: Dictionary mapping model names to model classes
-        
-    Returns:
-        List of wrapped worker models
+    Creates a pool of worker models based on configuration using the trainer's model creation logic.
     """
+    from ..training.trainer import train_model
+    import torch
+    
     workers = []
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     for config in model_configs:
-        model_name = config.pop('model_name')
-        if model_name not in available_models:
-            raise ValueError(f"Model {model_name} not found in available models")
+        model_args = config.copy()
+        model_type = model_args.pop('type')
         
-        model_class = available_models[model_name]
-        workers.append(WorkerWrapper(model_class, config))
+        # Extract common parameters
+        input_dim = model_args.get('input_dim', 7)  # Default for ETTh1
+        output_dim = model_args.get('output_dim', 1)  # Default for ETTh1
+        seq_len = model_args.get('seq_len', 96)  # Default sequence length
+        pred_len = model_args.get('pred_len', 96)  # Default prediction length
+        hidden_dim = model_args.get('hidden_dim', 128)
+        num_layers = model_args.get('num_layers', 2)
+        dropout = model_args.get('dropout', 0.1)
+        
+        # Create model using trainer logic
+        if model_type == 'lstm':
+            from ..models.lstm import TimeSeriesLSTM
+            model = TimeSeriesLSTM(input_dim, hidden_dim, output_dim, num_layers, dropout).to(device)
+        elif model_type == 'transformer':
+            from ..models.transformer import Transformer
+            model = Transformer(
+                input_dim=input_dim,
+                output_dim=output_dim,
+                seq_len=seq_len,
+                pred_len=pred_len,
+                d_model=hidden_dim,
+                n_heads=8,
+                d_ff=4*hidden_dim,
+                num_layers=num_layers,
+                dropout=dropout
+            ).to(device)
+        elif model_type == 'autoformer':
+            from ..models.Autoformer import Autoformer
+            model = Autoformer(
+                input_dim=input_dim,
+                output_dim=output_dim,
+                seq_len=seq_len,
+                pred_len=pred_len,
+                d_model=hidden_dim,
+                n_heads=8,
+                d_ff=4*hidden_dim,
+                num_layers=num_layers,
+                dropout=dropout,
+                factor=model_args.get('factor', 1)
+            ).to(device)
+        elif model_type == 'fedformer':
+            from ..models.FEDFormer import FEDformer
+            model = FEDformer(
+                enc_in=input_dim,
+                dec_in=input_dim,
+                c_out=output_dim,
+                seq_len=seq_len,
+                label_len=seq_len // 2,
+                pred_len=pred_len,
+                d_model=hidden_dim,
+                embed='fixed',
+                freq='h',
+                factor=model_args.get('factor', 5),
+                n_heads=8,
+                e_layers=num_layers,
+                d_layers=1,
+                d_ff=4*hidden_dim,
+                activation='gelu',
+                moving_avg=25,
+                distil=False,
+                version='fourier',
+                mode_select='random',
+                modes=16
+            ).to(device)
+        elif model_type == 'informer':
+            from ..models.Informer import Informer
+            model = Informer(
+                enc_in=input_dim,
+                dec_in=input_dim,
+                pred_len=pred_len,
+                label_len=seq_len // 2,
+                d_model=hidden_dim,
+                embed='fixed',
+                freq='h',
+                factor=model_args.get('factor', 5),
+                n_heads=8,
+                e_layers=num_layers,
+                d_layers=1,
+                d_ff=4*hidden_dim,
+                activation='gelu',
+                distil=False
+            ).to(device)
+        elif model_type == 'timesnet':
+            from ..models.TimesNet import TimesNet
+            # Use actual sequence and prediction lengths from the data
+            actual_seq_len = seq_len
+            actual_pred_len = pred_len
+            label_len = actual_seq_len
+            num_kernels = min(6, actual_seq_len)
+            top_k = min(5, actual_seq_len)
+            model = TimesNet(
+                enc_in=input_dim,
+                c_out=output_dim,
+                seq_len=actual_seq_len,
+                label_len=label_len,
+                pred_len=actual_pred_len,
+                d_model=hidden_dim,
+                d_ff=4*hidden_dim,
+                embed='fixed',
+                freq='h',
+                e_layers=num_layers,
+                dropout=dropout,
+                top_k=top_k,
+                num_kernels=num_kernels
+            ).to(device)
+        else:
+            raise ValueError(f"Unknown model type: {model_type}")
+        
+        # Create a simple wrapper that handles different model interfaces
+        class SimpleWorkerWrapper(nn.Module):
+            def __init__(self, model):
+                super().__init__()
+                self.model = model
+                self.model_type = 'Worker'
+                self.pred_len = pred_len
+                self.output_dim = output_dim
+                self.input_dim = input_dim
+            
+            def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, target=None):
+                # Use the model's prepare_batch method if available
+                if hasattr(self.model, 'prepare_batch'):
+                    # Always use the actual target from the data loader
+                    if target is not None:
+                        batch = (x_enc, target)
+                    else:
+                        # Only create dummy target if no target is provided (shouldn't happen in training)
+                        print("Warning: No target provided, creating dummy target")
+                        dummy_target = torch.zeros((x_enc.shape[0], self.pred_len, self.output_dim), 
+                                                 device=x_enc.device, dtype=x_enc.dtype)
+                        batch = (x_enc, dummy_target)
+                    
+                    inputs, _ = self.model.prepare_batch(batch)
+                    return self.model(*inputs)
+                else:
+                    # Fallback to direct forward
+                    return self.model(x_enc)
+        
+        workers.append(SimpleWorkerWrapper(model))
     
     return workers
 

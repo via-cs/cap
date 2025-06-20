@@ -1,9 +1,10 @@
 dataset:
-  path: "../cap/dataset/ElectricityTransformer/et_data.txt"
+  path: "../dataset/ElectricityTransformer/ETTh1.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
   test_size: 0.1
+  normalization: true
 
 model:
   type: "catp"
@@ -22,25 +23,16 @@ model:
   # Worker configurations
   workers:
     lstm_workers:
-      - name: "lstm_large"
-        hidden_dim: 256
-        num_layers: 2
-        dropout: 0.1
-      - name: "lstm_medium"
+      - name: "lstm_1"
+        type: "lstm"
         hidden_dim: 128
-        num_layers: 1
-        dropout: 0.1
-      - name: "lstm_deep"
-        hidden_dim: 512
-        num_layers: 3
-        dropout: 0.2
-      - name: "lstm_small"
-        hidden_dim: 64
+        seq_len: 96
+        pred_len: 24
         num_layers: 2
-        dropout: 0.15
+        dropout: 0.1
     
     transformer_workers:
-      - name: "transformer_medium"
+      - name: "transformer_1"
         d_model: 128
         n_heads: 4
         d_ff: 256
@@ -55,8 +47,8 @@ model:
 
 training:
   epochs: 50
-  manager_learning_rate: 0.005
-  worker_learning_rate: 0.001
+  manager_learning_rate: 0.001
+  worker_learning_rate: 0.0005
   patience: 5
   device: "cuda"
   clip_value: 0.5

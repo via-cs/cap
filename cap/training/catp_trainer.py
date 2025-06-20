@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import logging
 from ..models.catp import ManagerModel, WorkerWrapper
+from ..models import Autoformer, FEDformer, Informer, TimesNet
 from torch.optim import Adam, Optimizer
 import os
 
@@ -18,86 +19,96 @@ class SinkhornDistance(nn.Module):
         super(SinkhornDistance, self).__init__()
         self.eps = eps
         self.max_iter = max_iter
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     def forward(self, x, y):
-        # 确保输入维度正确
-        if x.dim() == 1:
-            x = x.unsqueeze(0)
-        if y.dim() == 1:
-            y = y.unsqueeze(0)
+        """
+        Compute Sinkhorn distance between two probability distributions.
+        
+        Args:
+            x: First distribution (manager output) - shape [batch_size, num_workers]
+            y: Second distribution (worker weights) - shape [batch_size, num_workers]
             
-        # 确保输入是概率分布
+        Returns:
+            Wasserstein distance (scalar)
+        """
+        # Ensure inputs are probability distributions
         x = F.softmax(x, dim=-1)
         y = F.softmax(y, dim=-1)
         
-        # 确保输入在正确的设备上
-        x = x.to(self.device)
-        y = y.to(self.device)
+        # Add numerical stability
+        x = torch.clamp(x, min=1e-8, max=1.0)
+        y = torch.clamp(y, min=1e-8, max=1.0)
         
-        C = self._cost_matrix(x, y)
-        x_points = x.shape[-1]  # 使用最后一个维度作为点的数量
-        y_points = y.shape[-1]
+        # Get dimensions
+        batch_size, num_workers = x.shape
         
-        if x.dim() == 2:
-            batch_size = 1
-        else:
-            batch_size = x.shape[0]
-
-        # both marginals are fixed with equal weights
-        mu = torch.empty(batch_size, x_points, dtype=torch.float,
-                         requires_grad=False, device=self.device).fill_(1.0 / x_points).squeeze()
-        nu = torch.empty(batch_size, y_points, dtype=torch.float,
-                         requires_grad=False, device=self.device).fill_(1.0 / y_points).squeeze()
-
-        u = torch.zeros_like(mu, device=self.device)
-        v = torch.zeros_like(nu, device=self.device)
-        # To check if algorithm terminates because of threshold
-        # or max iterations reached
-        actual_nits = 0
-        # Stopping criterion
-        thresh = 1e-1
-
-        # Sinkhorn iterations
+        # Create cost matrix (identity matrix for discrete distributions)
+        # This represents the cost of moving probability mass between workers
+        C = torch.eye(num_workers, device=x.device, dtype=x.dtype)
+        
+        # Initialize dual variables
+        u = torch.zeros(batch_size, num_workers, device=x.device, dtype=x.dtype)
+        v = torch.zeros(batch_size, num_workers, device=x.device, dtype=x.dtype)
+        
+        # Sinkhorn iterations with better numerical stability
         for i in range(self.max_iter):
-            u1 = u  # useful to check the update
-            u = self.eps * (torch.log(mu+1e-8) - torch.logsumexp(self.M(C, u, v), dim=-1)) + u
-            v = self.eps * (torch.log(nu+1e-8) - torch.logsumexp(self.M(C, u, v).transpose(-2, -1), dim=-1)) + v
-            err = (u - u1).abs().sum(-1).mean()
-
-            actual_nits += 1
-            if err.item() < thresh:
+            u_old = u.clone()
+            
+            # Update u with better numerical stability
+            log_x = torch.log(x)
+            logsumexp_u = torch.logsumexp(
+                (-C.unsqueeze(0) + u.unsqueeze(2) + v.unsqueeze(1)) / self.eps, dim=1
+            )
+            u = self.eps * (log_x - logsumexp_u)
+            
+            # Update v with better numerical stability
+            log_y = torch.log(y)
+            logsumexp_v = torch.logsumexp(
+                (-C.unsqueeze(0) + u.unsqueeze(2) + v.unsqueeze(1)) / self.eps, dim=2
+            )
+            v = self.eps * (log_y - logsumexp_v)
+            
+            # Check convergence
+            if torch.max(torch.abs(u - u_old)) < 1e-3:
                 break
-
-        U, V = u, v
-        # Transport plan pi = diag(a)*K*diag(b)
-        pi = torch.exp(self.M(C, U, V))
-        # Sinkhorn distance
-        cost = torch.sum(pi * C, dim=(-2, -1))
-
-        return cost.mean(), pi, C
-
-    def M(self, C, u, v):
-        "Modified cost for logarithmic updates"
-        "$M_{ij} = (-c_{ij} + u_i + v_j) / \epsilon$"
-        # 修复维度问题
-        if u.dim() == 1:
-            u = u.unsqueeze(0)
-        if v.dim() == 1:
-            v = v.unsqueeze(0)
-        return (-C + u.unsqueeze(1) + v.unsqueeze(0)) / self.eps
-
-    @staticmethod
-    def _cost_matrix(x, y, p=2):
-        "Returns the matrix of $|x_i-y_j|^p$."
-        x_col = x.unsqueeze(-2)
-        y_lin = y.unsqueeze(-3)
-        C = torch.sum((torch.abs(x_col - y_lin)) ** p, -1)
-        return C
+        
+        # Compute transport plan with numerical stability
+        pi = torch.exp(torch.clamp(
+            (-C.unsqueeze(0) + u.unsqueeze(2) + v.unsqueeze(1)) / self.eps,
+            min=-10.0, max=10.0
+        ))
+        
+        # Normalize transport plan
+        pi = pi / (torch.sum(pi, dim=(1, 2), keepdim=True) + 1e-8)
+        
+        # Compute Wasserstein distance
+        wasserstein_dist = torch.sum(pi * C.unsqueeze(0), dim=(1, 2))
+        
+        # Ensure the result is finite and positive
+        wasserstein_dist = torch.clamp(wasserstein_dist, min=0.0, max=100.0)
+        
+        # Debug: Check for any NaN or negative values
+        if torch.isnan(wasserstein_dist).any() or (wasserstein_dist < 0).any():
+            print(f"Warning: Invalid Wasserstein distance detected: {wasserstein_dist}")
+            wasserstein_dist = torch.clamp(wasserstein_dist, min=0.0, max=100.0)
+        
+        # Debug: Print distributions for first batch
+        if batch_size > 0:
+            print(f"    Debug - Manager output: {x[0].detach().cpu().numpy()}")
+            print(f"    Debug - Worker weights: {y[0].detach().cpu().numpy()}")
+            print(f"    Debug - Raw Wasserstein: {wasserstein_dist[0].item():.6f}")
+        
+        return wasserstein_dist.mean()
 
 class CATPTrainer:
     """
     Trainer class for Collaborative Adaptive Time-series Prediction (CATP) framework.
+    
+    This trainer is compatible with the new data loader format that provides:
+    - worker_data: Input tensor of shape [batch, seq_len, in_dim]
+    - worker_target: Target tensor of shape [batch, pred_len, out_dim]
+    
+    The trainer automatically handles missing temporal features through the WorkerWrapper.
     """
     def __init__(
         self,
@@ -148,6 +159,9 @@ class CATPTrainer:
         
         # Initialize Sinkhorn distance calculator
         self.sinkhorn = SinkhornDistance(eps=0.1, max_iter=100)
+        
+        # Check model compatibility
+        self._check_model_compatibility()
 
     def _create_optimizer(
         self,
@@ -179,33 +193,46 @@ class CATPTrainer:
         Args:
             worker_data: Input tensor for workers
             worker_target: Target tensor for prediction
-            x_mark_enc: Optional temporal features for encoder
-            x_mark_dec: Optional temporal features for decoder
+            x_mark_enc: Optional temporal features for encoder (not used in new data format)
+            x_mark_dec: Optional temporal features for decoder (not used in new data format)
             
         Returns:
             Tensor of losses for each worker
         """
         losses = []
-        for worker in self.worker_models:
+        for i, worker in enumerate(self.worker_models):
             worker.train()
             
-            # Get model predictions
-            output = worker(worker_data, x_mark_enc)
+            # Get model predictions - WorkerWrapper handles all model interfaces automatically
+            # Pass both input data and target to the wrapper
+            output = worker(worker_data, target=worker_target)
+            
+            # Print output dimensions for the first batch only (to avoid spam)
+            if not hasattr(self, '_output_dimensions_printed'):
+                model_name = type(worker.model).__name__
+                pred_len = output.shape[1]
+                features = output.shape[2]
+                # print(f"   Worker {i+1} ({model_name}) output: {pred_len} x {features} (pred_len x features)")
+                
+                # Mark that we've printed dimensions
+                if i == len(self.worker_models) - 1:
+                    self._output_dimensions_printed = True
+                    print()  # Add empty line after all dimensions are printed
             
             # Ensure output and target have same shape
-            if output.shape != worker_target.shape:
-                # If output is longer than target, truncate it
-                if output.shape[1] > worker_target.shape[1]:
-                    output = output[:, :worker_target.shape[1], :]
-                # If output is shorter than target, pad it with zeros
-                elif output.shape[1] < worker_target.shape[1]:
-                    padding = torch.zeros(
-                        output.shape[0],
-                        worker_target.shape[1] - output.shape[1],
-                        output.shape[2],
-                        device=output.device
-                    )
-                    output = torch.cat([output, padding], dim=1)
+            # if output.shape != worker_target.shape:
+            #     # If output is longer than target, truncate it
+            #     if output.shape[1] > worker_target.shape[1]:
+            #         output = output[:, :worker_target.shape[1], :]
+            #     # If output is shorter than target, pad it with zeros
+            #     elif output.shape[1] < worker_target.shape[1]:
+            #         padding = torch.zeros(
+            #             output.shape[0],
+            #             worker_target.shape[1] - output.shape[1],
+            #             output.shape[2],
+            #             device=output.device
+            #         )
+            #         output = torch.cat([output, padding], dim=1)
             
             # Compute loss
             loss = self.criterion(output, worker_target)
@@ -246,6 +273,75 @@ class CATPTrainer:
         
         return worker_weights, training_history.detach().cpu().numpy()
 
+    def _check_model_compatibility(self) -> bool:
+        """
+        Check if all worker models are compatible with the new data format.
+        
+        Returns:
+            True if all models are compatible, False otherwise
+        """
+        compatible_models = []
+        incompatible_models = []
+        
+        for i, worker in enumerate(self.worker_models):
+            model = worker.model
+            model_name = type(model).__name__
+            
+            # Check if model has prepare_batch method (new interface)
+            if hasattr(model, 'prepare_batch'):
+                compatible_models.append(f"Worker {i}: {model_name} (new interface)")
+            # Check if model has predict method (old interface)
+            elif hasattr(model, 'predict'):
+                compatible_models.append(f"Worker {i}: {model_name} (predict interface)")
+            # Check if model is one of the known compatible types
+            elif isinstance(model, (Autoformer, FEDformer, Informer, TimesNet)):
+                compatible_models.append(f"Worker {i}: {model_name} (direct interface)")
+            else:
+                incompatible_models.append(f"Worker {i}: {model_name} (unknown interface)")
+        
+        if incompatible_models:
+            print("  Warning: Some models may not be fully compatible:")
+            for model in incompatible_models:
+                print(f"   {model}")
+            print("   The WorkerWrapper will attempt to handle these models automatically.")
+        
+        print(" Compatible models:")
+        for model in compatible_models:
+            print(f"   {model}")
+        
+        return True  # Always return True as WorkerWrapper handles fallbacks
+
+    def _check_data_format(self, batch_data: Tuple[torch.Tensor, ...]) -> bool:
+        """
+        Check if the batch data format is compatible with the trainer.
+        
+        Args:
+            batch_data: Batch data from dataloader
+            
+        Returns:
+            True if format is compatible, False otherwise
+        """
+        if not isinstance(batch_data, tuple):
+            print(f"Error: Expected tuple, got {type(batch_data)}")
+            return False
+            
+        if len(batch_data) != 2:
+            print(f"Error: Expected 2 elements (X, Y), got {len(batch_data)} elements")
+            print("This trainer expects the new data format: (worker_data, worker_target)")
+            return False
+            
+        worker_data, worker_target = batch_data
+        
+        if not isinstance(worker_data, torch.Tensor) or not isinstance(worker_target, torch.Tensor):
+            print(f"Error: Expected torch.Tensor, got {type(worker_data)} and {type(worker_target)}")
+            return False
+            
+        if worker_data.dim() != 3 or worker_target.dim() != 3:
+            print(f"Error: Expected 3D tensors, got shapes {worker_data.shape} and {worker_target.shape}")
+            return False
+            
+        return True
+
     def train_step(
         self,
         batch_data: Tuple[torch.Tensor, ...],
@@ -255,21 +351,26 @@ class CATPTrainer:
     ) -> Dict[str, float]:
         """
         Perform a single training step.
+        
+        Args:
+            batch_data: Tuple containing (worker_data, worker_target) from new data loader
+            epoch: Current training epoch
+            batch_idx: Current batch index
+            total_batches: Total number of batches per epoch
         """
-        worker_data, worker_target = batch_data[:2]
-        x_mark_enc = batch_data[2] if len(batch_data) > 2 else None
-        x_mark_dec = batch_data[3] if len(batch_data) > 3 else None
+        # Check data format compatibility
+        if not self._check_data_format(batch_data):
+            raise ValueError("Incompatible data format. Please use the new data loader format.")
+        
+        # New data format only provides (X, Y) - no temporal features
+        worker_data, worker_target = batch_data
         
         worker_data = worker_data.to(self.device)
         worker_target = worker_target.to(self.device)
-        if x_mark_enc is not None:
-            x_mark_enc = x_mark_enc.to(self.device)
-        if x_mark_dec is not None:
-            x_mark_dec = x_mark_dec.to(self.device)
 
-        # Compute worker losses
+        # Compute worker losses - no temporal features needed
         all_worker_losses = self._compute_worker_losses(
-            worker_data, worker_target, x_mark_enc, x_mark_dec
+            worker_data, worker_target
         )
         worker_weights, history = self._compute_worker_weights(all_worker_losses, epoch)
         
@@ -301,7 +402,14 @@ class CATPTrainer:
         diversity_weight = max(0.01, 0.1 - (epoch / 20))
         diversity_loss = torch.mean(torch.sum(manager_output * worker_weights, dim=-1))
         
-        # Combine losses with proper signs
+        # Debug: Print individual loss components for the first few batches
+        # if batch_idx < 3:
+        #     print(f"    Debug - KL Divergence: {kl_div.item():.4f}, "
+        #           f"Entropy: {entropy.item():.4f}, "
+        #           f"Diversity: {diversity_loss.item():.4f}")
+        #     print(f"    Debug - Weights: entropy={entropy_weight:.3f}, diversity={diversity_weight:.3f}")
+        
+        # Combine losses with proper signs (back to KL divergence)
         manager_loss = kl_div + entropy_weight * entropy - diversity_weight * diversity_loss
         
         # Add L2 regularization with smaller weight
@@ -312,12 +420,18 @@ class CATPTrainer:
         
         # Check for NaN values
         if torch.isnan(manager_loss):
-            print(f"Warning: NaN detected in manager loss. KL: {kl_div.item()}, Entropy: {entropy.item()}")
+            print(f"Warning: NaN detected in manager loss. KL Divergence: {kl_div.item()}, Entropy: {entropy.item()}")
             manager_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
         
         # Backward pass with gradient clipping
         manager_loss.backward()
-        grad_norm = torch.norm(torch.stack([p.grad.norm() for p in self.manager_model.parameters() if p.grad is not None]))
+        
+        # Compute gradient norm only if there are gradients
+        gradients = [p.grad.norm() for p in self.manager_model.parameters() if p.grad is not None]
+        if gradients:
+            grad_norm = torch.norm(torch.stack(gradients))
+        else:
+            grad_norm = torch.tensor(0.0, device=self.device)
         
         # Adaptive gradient clipping with faster decay
         clip_value = max(0.1, self.clip_value * (1.0 - epoch / 20))
@@ -330,12 +444,6 @@ class CATPTrainer:
         with torch.no_grad():
             manager_probs = self.manager_model(worker_data)
             selected_workers = torch.argmax(manager_probs, dim=-1)
-            
-            # Print worker selection information
-            # unique_workers, counts = torch.unique(selected_workers, return_counts=True)
-            # print("\nWorker Selection in this batch:")
-            # for worker_idx, count in zip(unique_workers.cpu().numpy(), counts.cpu().numpy()):
-            #     print(f"  Worker {worker_idx} : {count} samples ({count/len(selected_workers)*100:.1f}%)")
         
         # 训练workers
         worker_losses = []
@@ -349,9 +457,11 @@ class CATPTrainer:
                 self.worker_optimizers[wi].zero_grad()
                 batch_data = worker_data[mask]
                 batch_target = worker_target[mask]
-                batch_mark_enc = x_mark_enc[mask] if x_mark_enc is not None else None
                 
-                output = worker(batch_data, batch_mark_enc)
+                # WorkerWrapper handles missing temporal features automatically
+                # Pass both input data and target to the wrapper
+                output = worker(batch_data, target=batch_target)
+                
                 loss = self.criterion(output, batch_target)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(worker.parameters(), self.clip_value)
@@ -396,13 +506,11 @@ class CATPTrainer:
         
         with torch.no_grad():
             for batch_data in val_loader:
-                worker_data, worker_target = batch_data[:2]
-                x_mark_enc = batch_data[2] if len(batch_data) > 2 else None
+                # New data format only provides (X, Y)
+                worker_data, worker_target = batch_data
                 
                 worker_data = worker_data.to(self.device)
                 worker_target = worker_target.to(self.device)
-                if x_mark_enc is not None:
-                    x_mark_enc = x_mark_enc.to(self.device)
                 
                 manager_output = self.manager_model(worker_data)
                 selected_workers = torch.argmax(manager_output, dim=-1)
@@ -411,10 +519,9 @@ class CATPTrainer:
                     worker_idx = selected_workers[i].item()
                     worker = self.worker_models[worker_idx]
                     
-                    output = worker(
-                        data.unsqueeze(0),
-                        x_mark_enc[i].unsqueeze(0) if x_mark_enc is not None else None
-                    )
+                    # WorkerWrapper handles missing temporal features automatically
+                    # Pass both input data and target to the wrapper
+                    output = worker(data.unsqueeze(0), target=target.unsqueeze(0))
                     loss = self.criterion(output, target.unsqueeze(0))
                     total_loss += loss.item()
                     total_samples += 1
@@ -494,13 +601,14 @@ class CATPTrainer:
             print(f"\nEpoch {epoch + 1}/{epochs}")
             
             # Update learning rates with cosine decay
-            current_manager_lr = self._get_cosine_lr(
-                epoch, epochs, self.manager_optimizer.param_groups[0]['lr'], min_lr
-            )
-            current_worker_lr = self._get_cosine_lr(
-                epoch, epochs, self.worker_optimizers[0].param_groups[0]['lr'], min_lr
-            )
-            
+            # current_manager_lr = self._get_cosine_lr(
+            #     epoch, epochs, self.manager_optimizer.param_groups[0]['lr'], min_lr
+            # )
+            current_manager_lr = self.manager_optimizer.param_groups[0]['lr']
+            # current_worker_lr = self._get_cosine_lr(
+            #     epoch, epochs, self.worker_optimizers[0].param_groups[0]['lr'], min_lr
+            # )
+            current_worker_lr = self.worker_optimizers[0].param_groups[0]['lr']
             # Update learning rates
             for param_group in self.manager_optimizer.param_groups:
                 param_group['lr'] = current_manager_lr
@@ -525,7 +633,7 @@ class CATPTrainer:
                 epoch_train_losses.append(metrics['worker_loss'])
                 epoch_worker_selections.append(metrics['worker_selections'])
                 
-                if batch_idx % 10 == 0:
+                if batch_idx % 32 == 0:
                     print(f"  Batch {batch_idx}: Worker Loss = {metrics['worker_loss']:.4f}, "
                           f"Manager Loss = {metrics['manager_loss']:.4f}")
             
@@ -537,6 +645,13 @@ class CATPTrainer:
             epoch_selections = np.concatenate(epoch_worker_selections)
             selection_rates = np.bincount(epoch_selections, minlength=len(self.worker_models)) / len(epoch_selections)
             worker_selections.append(selection_rates)
+            
+            # Print worker selection rates for this epoch
+            print(f"Epoch {epoch + 1} Worker Selection Rates:")
+            worker_names = ['LSTM-High', 'LSTM-Low', 'Transformer', 'Autoformer', 'FEDFormer', 'Informer', 'TimesNet']
+            for i, (name, rate) in enumerate(zip(worker_names, selection_rates)):
+                print(f"  {name}: {rate:.3f}")
+            print()
             
             # Validation
             val_loss = self.validate(val_loader)

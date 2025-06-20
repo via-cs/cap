@@ -150,7 +150,8 @@ class FEDformer(nn.Module):
 
         # Final output
         dec_out = trend_part + seasonal_part
-        return dec_out[:, -self.pred_len:, :]  # Shape: (batch, pred_len, c_out)
+        # print(dec_out[:, -self.pred_len:, :].shape) 
+        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Shape: (batch, pred_len, 1) - add dimension
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """

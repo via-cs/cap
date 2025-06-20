@@ -144,7 +144,7 @@ class TimesNet(nn.Module):
         dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
         dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
 
-        return dec_out[:, -self.pred_len:, :]  # Return only the predicted part
+        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Return only the predicted part
 
     def forward(self, x_enc, x_mark_enc):
         """

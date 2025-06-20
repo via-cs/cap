@@ -20,7 +20,7 @@ import random
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Train a model for ET-data')
-    parser.add_argument('--config', type=str, default='cap/configs/config_et.yaml',
+    parser.add_argument('--config', type=str, default='cap/configs/ett_config.yaml',
                         help='Path to configuration file')
     parser.add_argument('--model-type', type=str, default=None,
                         help='Override model type from config')

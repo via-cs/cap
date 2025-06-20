@@ -1,0 +1,94 @@
+# Data Configuration
+data:
+  path: "dataset/ElectricityTransformer/ETTh1.csv"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+  seq_len: 96
+  pred_len: 96
+
+# Model Configuration
+models:
+  # Manager Model
+  manager:
+    d_model: 128
+    n_heads: 4
+    d_ff: 256
+    num_layers: 2
+    dropout: 0.1
+
+  # Worker Models - based on quick_catp_test.py
+  workers:
+    - name: "LSTM-High"
+      type: "lstm"
+      hidden_dim: 128
+      num_layers: 3
+      dropout: 0.1
+      count: 2
+      
+    - name: "LSTM-Low"
+      type: "lstm"
+      hidden_dim: 64
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+      
+    - name: "Transformer"
+      type: "transformer"
+      hidden_dim: 128
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+      
+    - name: "Autoformer"
+      type: "autoformer"
+      hidden_dim: 128
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+      
+    - name: "FEDFormer"
+      type: "fedformer"
+      hidden_dim: 128
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+      
+    - name: "Informer"
+      type: "informer"
+      hidden_dim: 128
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+      
+    - name: "TimesNet"
+      type: "timesnet"
+      hidden_dim: 128
+      num_layers: 2
+      dropout: 0.1
+      # count: 1
+
+# Training Configuration
+training:
+  epochs: 5
+  manager_lr: 0.001
+  worker_lr: 0.0005
+  clip_value: 1.0
+  worker_update_steps: 2
+
+# Logging Configuration
+logging:
+  log_dir: "runs/et_training"
+  checkpoint_dir: "saved_models/et_training"
+  plot_metrics: false  # No plotting for quick test
+
+# Hardware Configuration
+hardware:
+  device: "auto"  # "auto", "cuda", "cpu"
+
+# Experiment Configuration
+experiment:
+  name: "et_catp_training"
+  description: "CATP training on Electricity Transformer dataset with 7 worker models" 
