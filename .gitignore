@@ -50,3 +50,10 @@ venv/
 # ignore raw data dumps
 dataset/electricity/*.csv
 dataset/traffic/*.csv
+
+# ignore local venv
+venv/
+
+# ignore raw data dumps
+dataset/electricity/*.csv
+dataset/traffic/*.csv
