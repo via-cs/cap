@@ -42,6 +42,14 @@ def main():
         config['training']['epochs'] = args.epochs
     if args.device:
         config['training']['device'] = args.device
+    
+    # If Fedformer or TimesNet, force a larger window for stability
+    mt = config['model']['type'].lower()
+    if mt in ('fedformer', 'timesnet'):
+        print(f"{mt.title()} detected — overriding sequence and prediction lengths for stability.")
+        # assume your config.yaml has seq_len/pred_len under model
+        config['dataset']['seq_len']  = config['model'].get('seq_len', 96)
+        config['dataset']['pred_len'] = config['model'].get('pred_len', 24)
 
     # Print configuration
     print("Configuration:")
@@ -51,27 +59,27 @@ def main():
 
     # Get dataloaders
     # Default lengths
-    seq_len = 3
-    pred_len = 3
+    seq_len  = config['model'].get('seq_len',  96)
+    pred_len = config['model'].get('pred_len', 24)
 
     # Override for Autoformer (before passing to dataloader!)
-    if config['model']['type'].lower() == 'autoformer':
-        print("Autoformer detected — overriding sequence and prediction lengths for stability.")
-        seq_len = 96
-        pred_len = 24
+    #if config['model']['type'].lower() == 'autoformer':
+        #print("Autoformer detected — overriding sequence and prediction lengths for stability.")
+        #seq_len = 96
+        #pred_len = 24
 
     # Get dataloaders
     train_loader, valid_loader, test_loader = get_dataloaders(
-        path=config['dataset']['path'],
-        batch_size=config['dataset']['batch_size'],
-        shuffle=True,
-        train_size=config['dataset']['train_size'],
-        valid_size=config['dataset']['valid_size'],
-        test_size=config['dataset']['test_size'],
-        model_type=config['model']['type'],
-        normalization=config['dataset'].get('normalization', True),
-        seq_len=seq_len,
-        pred_len=pred_len
+        path         = config['dataset']['path'],
+        batch_size    = config['dataset']['batch_size'],
+        shuffle       = True,
+        train_size    = config['dataset']['train_size'],
+        valid_size    = config['dataset']['valid_size'],
+        test_size     = config['dataset']['test_size'],
+        model_type    = config['model']['type'],               # only used to pick CSV vs TXT logic
+        normalization = config['dataset'].get('normalization', True),
+        seq_len       = seq_len,
+        pred_len      = pred_len,
     )
 
 
@@ -83,11 +91,6 @@ def main():
         seq_len = inputs.shape[1]
         pred_len = targets.shape[1]
         break
-
-    if config['model']['type'].lower() == 'autoformer':
-        print("Autoformer detected — overriding sequence and prediction lengths for stability.")
-        seq_len = 96
-        pred_len = 24
 
     print(f"Input dimension: {input_dim}")
     print(f"Output dimension: {output_dim}")

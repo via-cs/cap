@@ -108,6 +108,15 @@ class TimesNet(nn.Module):
         self.predict_linear = nn.Linear(self.seq_len, self.pred_len + self.seq_len)
         self.projection = nn.Linear(d_model, c_out, bias=True)
 
+    def prepare_batch(self, batch):
+        """
+        Unpack and prepare the batch for the model.
+        """
+        X, Y = batch
+        x_enc = X
+        x_mark_enc = torch.zeros_like(X)
+        return (x_enc, x_mark_enc), Y
+    
     def forecast(self, x_enc, x_mark_enc):
         """
         Forecasts future values using TimesNet.

@@ -1,0 +1,21 @@
+dataset:
+  path: "dataset/ETT-small/ETTm1.csv"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+
+model:
+  type: "timesnet"
+  hidden_dim: 128
+  seq_len: 96
+  pred_len: 96
+  num_layers: 2
+  dropout: 0.1
+
+training:
+  epochs: 30
+  learning_rate: 0.1
+  patience: 5
+  device: "cuda"

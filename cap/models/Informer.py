@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from ..layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
 from ..layers.SelfAttention_Family import ProbAttention, AttentionLayer
 from ..layers.Embed import DataEmbedding
-from .base import BaseTimeSeriesModel
+from ..utils.base import BaseTimeSeriesModel
 
 
 class Informer(BaseTimeSeriesModel):

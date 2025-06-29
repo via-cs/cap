@@ -1,4 +1,30 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Logs
+*.log
 __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
@@ -18,3 +44,5 @@ venv/
 cap/venv
 .DS_Store
 .vscode/
+
+saved_models/*.pth
