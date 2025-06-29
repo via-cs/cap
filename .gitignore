@@ -71,3 +71,10 @@ venv/
 # raw data (too big)
 dataset/electricity/*.csv
 dataset/traffic/*.csv
+
+# local Python env
+venv/
+
+# raw data (too big)
+dataset/electricity/*.csv
+dataset/traffic/*.csv
