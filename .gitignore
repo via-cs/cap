@@ -57,3 +57,10 @@ venv/
 # ignore raw data dumps
 dataset/electricity/*.csv
 dataset/traffic/*.csv
+
+# local Python env
+venv/
+
+# raw data (too big for GitHub)
+dataset/electricity/*.csv
+dataset/traffic/*.csv
