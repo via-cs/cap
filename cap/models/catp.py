@@ -205,24 +205,24 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
         output_dim = model_args.get('output_dim', 1)  # Default for ETTh1
         seq_len = model_args.get('seq_len', 96)  # Default sequence length
         pred_len = model_args.get('pred_len', 96)  # Default prediction length
-        hidden_dim = model_args.get('hidden_dim', 128)
+        hidden_dim = model_args.get('hidden_dim', 512)
         num_layers = model_args.get('num_layers', 2)
-        dropout = model_args.get('dropout', 0.1)
+        dropout = model_args.get('dropout', 0.05)
         
         # Create model using trainer logic
         if model_type == 'lstm':
             from ..models.lstm import TimeSeriesLSTM
             model = TimeSeriesLSTM(input_dim, hidden_dim, output_dim, num_layers, dropout).to(device)
         elif model_type == 'transformer':
-            from ..models.transformer import Transformer
+            from .transformer import Transformer
             model = Transformer(
                 input_dim=input_dim,
                 output_dim=output_dim,
                 seq_len=seq_len,
                 pred_len=pred_len,
-                d_model=hidden_dim,
+                d_model=512,
                 n_heads=8,
-                d_ff=4*hidden_dim,
+                d_ff=2048,
                 num_layers=num_layers,
                 dropout=dropout
             ).to(device)
@@ -233,12 +233,12 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
                 output_dim=output_dim,
                 seq_len=seq_len,
                 pred_len=pred_len,
-                d_model=hidden_dim,
+                d_model=512,
                 n_heads=8,
-                d_ff=4*hidden_dim,
+                d_ff=2048,
                 num_layers=num_layers,
                 dropout=dropout,
-                factor=model_args.get('factor', 1)
+                factor=3
             ).to(device)
         elif model_type == 'fedformer':
             from ..models.FEDFormer import FEDformer
@@ -249,20 +249,20 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
                 seq_len=seq_len,
                 label_len=seq_len // 2,
                 pred_len=pred_len,
-                d_model=hidden_dim,
+                d_model=512,
                 embed='fixed',
                 freq='h',
                 factor=model_args.get('factor', 5),
                 n_heads=8,
                 e_layers=num_layers,
                 d_layers=1,
-                d_ff=4*hidden_dim,
+                d_ff=2048,
                 activation='gelu',
                 moving_avg=25,
                 distil=False,
                 version='fourier',
                 mode_select='random',
-                modes=16
+                modes=32
             ).to(device)
         elif model_type == 'informer':
             from ..models.Informer import Informer
@@ -271,14 +271,14 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
                 dec_in=input_dim,
                 pred_len=pred_len,
                 label_len=seq_len // 2,
-                d_model=hidden_dim,
+                d_model=512,
                 embed='fixed',
                 freq='h',
                 factor=model_args.get('factor', 5),
                 n_heads=8,
                 e_layers=num_layers,
                 d_layers=1,
-                d_ff=4*hidden_dim,
+                d_ff=2048,
                 activation='gelu',
                 distil=False
             ).to(device)
@@ -296,8 +296,8 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
                 seq_len=actual_seq_len,
                 label_len=label_len,
                 pred_len=actual_pred_len,
-                d_model=hidden_dim,
-                d_ff=4*hidden_dim,
+                d_model=16,
+                d_ff=32,
                 embed='fixed',
                 freq='h',
                 e_layers=num_layers,

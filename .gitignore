@@ -44,3 +44,6 @@ venv/
 cap/venv
 .DS_Store
 .vscode/
+
+saved_models/
+dataset/long_term_forecast/

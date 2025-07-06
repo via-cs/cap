@@ -78,7 +78,7 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len):
 def main():
     """Main training function."""
     parser = argparse.ArgumentParser(description="Train CATP on ET dataset")
-    parser.add_argument("--config", type=str, default="cap/configs/et_training_config.yaml",
+    parser.add_argument("--config", type=str, default="cap/configs/et_catp_base.yaml",
                        help="Path to configuration file")
     parser.add_argument("--validate-config", action="store_true",
                        help="Validate configuration and exit")
@@ -172,7 +172,9 @@ def main():
             worker_lr=config['training']['worker_lr'],
             log_dir=config['logging']['log_dir'],
             clip_value=config['training']['clip_value'],
-            worker_update_steps=config['training']['worker_update_steps']
+            worker_update_steps=config['training']['worker_update_steps'],
+            use_multi_gpu=True,  # Enable multi-GPU training
+            distributed=False  # Use DataParallel instead of DDP for now
         )
         
         # 5. Training
@@ -182,8 +184,9 @@ def main():
             val_loader=val_loader,
             epochs=config['training']['epochs'],
             checkpoint_dir=config['logging']['checkpoint_dir'],
-            early_stopping_patience=None,  # No early stopping for quick test
-            plot_metrics=config['logging']['plot_metrics']
+            early_stopping_patience=config['training']['patience'],  # No early stopping for quick test
+            plot_metrics=config['logging']['plot_metrics'],
+            pre_training_epochs=config['training']['pre_training_epochs']
         )
         
         # 6. Evaluation
@@ -199,10 +202,9 @@ def main():
         
         # 8. Worker selection analysis
         final_selections = history['worker_selections'][-1]
-        worker_names = [worker['name'] for worker in config['models']['workers']]
         print("\n Final worker selection rates:")
-        for name, rate in zip(worker_names, final_selections):
-            print(f"   {name}: {rate:.3f}")
+        for i, rate in enumerate(final_selections):
+            print(f"   Worker {i}: {rate:.3f}")
         
         print("\n CATP training completed successfully!")
         

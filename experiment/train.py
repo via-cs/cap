@@ -1,13 +1,13 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from CAP.cap.data.data import get_dataloaders, Corpus
-from cap.models.lstm import TimeSeriesLSTM
+from ..cap.data.data import get_dataloaders, Corpus
+from ..cap.models.lstm import TimeSeriesLSTM
 from result import load_model, evaluate_model
-from cap.models.transformer import TimeSeriesTransformer
-from cap.models.Autoformer import Autoformer
-from cap.models.Informer import Informer
-from cap.models.FEDFormer import FEDformer
+from ..cap.models.transformer import TimeSeriesTransformer
+from ..cap.models.Autoformer import Autoformer
+from ..cap.models.Informer import Informer
+from ..cap.models.FEDFormer import FEDformer
 import yaml
 import argparse
 

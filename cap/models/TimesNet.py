@@ -69,8 +69,8 @@ class TimesNet(nn.Module):
     Paper: https://openreview.net/pdf?id=ju_Uqw384Oq
     """
 
-    def __init__(self, enc_in, seq_len, label_len, pred_len, c_out, d_model=512, embed="fixed", freq="h",
-                 dropout=0.1, d_ff=1024, num_kernels=6, top_k=5, e_layers=2):
+    def __init__(self, enc_in, seq_len, label_len, pred_len, c_out, d_model=16, embed="fixed", freq="h",
+                 dropout=0.05, d_ff=32, num_kernels=6, top_k=5, e_layers=2):
         """
         Args:
             enc_in (int): Number of input features.

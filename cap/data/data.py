@@ -179,10 +179,31 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
           torch.tensor(out, dtype=torch.float32)     # [pred_len, 1]
         )
     
+    def inverse_transform(self, data):
+        """
+        Convert normalized targets back to original scale.
+        
+        Args:
+            data: Tensor of shape [batch, pred_len, 1] or [pred_len, 1] with normalized values
+            
+        Returns:
+            Tensor of same shape with values in original scale
+        """
+        if not self.norm:
+            return data
+        
+        # Handle both batch and single sample cases
+        if data.dim() == 3:  # [batch, pred_len, 1]
+            return data * self.y_std + self.y_mean
+        elif data.dim() == 2:  # [pred_len, 1]
+            return data * self.y_std + self.y_mean
+        else:
+            raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
+
 class FedformerSequenceDataset(CSVSequenceDataset):
     """
     Like CSVSequenceDataset, but applies a global StandardScaler fit on the entire
-    train split’s inputs—and then reuses that same scaler for valid/test.
+    train split's inputs—and then reuses that same scaler for valid/test.
     """
     def __init__(self, csv_path, seq_len=3, pred_len=3):
         # turn off the built-in per-sample normalization
@@ -210,6 +231,30 @@ class FedformerSequenceDataset(CSVSequenceDataset):
         X_scaled = X_scaled.reshape(seq_len, feat)
 
         return torch.tensor(X_scaled, dtype=torch.float32), Y
+
+    def inverse_transform(self, data):
+        """
+        Convert normalized data back to original scale.
+        
+        Args:
+            data: Tensor with normalized values
+            
+        Returns:
+            Tensor with values in original scale
+        """
+        if hasattr(self, 'scaler'):
+            # For input data that was scaled with StandardScaler
+            if data.dim() == 3:  # [batch, seq_len, features]
+                batch_size, seq_len, feat = data.shape
+                data_reshaped = data.reshape(-1, feat)
+                data_inv = self.scaler.inverse_transform(data_reshaped)
+                return torch.tensor(data_inv.reshape(batch_size, seq_len, feat), dtype=torch.float32)
+            elif data.dim() == 2:  # [seq_len, features]
+                data_inv = self.scaler.inverse_transform(data.numpy())
+                return torch.tensor(data_inv, dtype=torch.float32)
+        
+        # For target data, use parent's inverse_transform
+        return super().inverse_transform(data)
 
 
 class Corpus:

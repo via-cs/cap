@@ -53,9 +53,9 @@ def train_model(
             pred_len=pred_len,
             d_model=hidden_dim,
             n_heads=8,
-            d_ff=4*hidden_dim,
+            d_ff=2048,
             num_layers=num_layers,
-            dropout=0.1
+            dropout=0.05
         ).to(device)
 
     # 3) Autoformer
@@ -67,10 +67,10 @@ def train_model(
             pred_len=pred_len,
             d_model=hidden_dim,
             n_heads=8,
-            d_ff=4*hidden_dim,
+            d_ff=2048,
             num_layers=num_layers,
-            dropout=0.1,
-            factor=1
+            dropout=0.05,
+            factor=3
         ).to(device)
 
     # 4) Informer & FEDformer via signature introspection
@@ -113,12 +113,12 @@ def train_model(
             seq_len=seq_len,
             label_len=label_len,
             pred_len=pred_len,
-            d_model=hidden_dim,
-            d_ff=4*hidden_dim,
+            d_model=16,
+            d_ff=32,
             embed='fixed',
             freq='h',
             e_layers=num_layers,
-            dropout=0.1,
+            dropout=0.05,
             top_k=top_k,
             num_kernels=num_kernels
         ).to(device)

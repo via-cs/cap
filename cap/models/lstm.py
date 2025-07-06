@@ -4,7 +4,7 @@ from ..layers.Embed import DataEmbedding
 from ..utils.base import BaseTimeSeriesModel
 
 class TimeSeriesLSTM(BaseTimeSeriesModel):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=2, dropout=0.1):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=2, dropout=0.05):
         """
         LSTM model for time-series forecasting.
 
@@ -20,7 +20,7 @@ class TimeSeriesLSTM(BaseTimeSeriesModel):
         self.num_layers = num_layers
 
         # LSTM layer with batch_first=True to accept input of shape (batch_size, seq_len, input_dim)
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, dropout=dropout)
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
 
         # Fully connected output layer
         self.fc = nn.Linear(hidden_dim, output_dim)

@@ -15,8 +15,8 @@ class FEDformer(nn.Module):
     """
 
     def __init__(self, enc_in, dec_in, pred_len, c_out, seq_len, label_len,
-                 d_model=512, embed="fixed", freq="h", dropout=0.1, factor=5,
-                 n_heads=8, e_layers=2, d_layers=1, d_ff=1024, activation="gelu",
+                 d_model=512, embed="fixed", freq="h", dropout=0.05, factor=3,
+                 n_heads=8, e_layers=2, d_layers=1, d_ff=2048, activation="gelu",
                  moving_avg=25, distil=False, version='fourier', mode_select='random', modes=32):
         """
         Initializes the FEDformer model.

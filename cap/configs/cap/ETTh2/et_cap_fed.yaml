@@ -1,0 +1,53 @@
+data:
+  path: "dataset/long_term_forecast/ETT-small/ETTh2.csv"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+  seq_len: 96
+  pred_len: 96
+
+# Model Configuration
+models:
+  # Manager Model
+  manager:
+    d_model: 512
+    n_heads: 8
+    d_ff: 2048
+    num_layers: 2
+    dropout: 0.05
+
+  # Worker Models - based on quick_catp_test.py
+  workers:
+  
+    - name: "FEDFormer"
+      type: "fedformer"
+      hidden_dim: 512
+      num_layers: 2
+      dropout: 0.05
+      count: 3
+      
+
+
+# Training Configuration
+training:
+  epochs: 30
+  manager_lr: 0.00001
+  worker_lr: 0.0001
+  clip_value: 1.0
+  patience: 5
+  worker_update_steps: 2
+  pre_training_epochs: 0
+  
+# Logging Configuration
+logging:
+  log_dir: "runs/et_training"
+  checkpoint_dir: "saved_models/et_training"
+  plot_metrics: false  # No plotting for quick test
+
+# Hardware Configuration
+hardware:
+  device: "auto"  # "auto", "cuda", "cpu"
+  multi_gpu: true  # Enable multi-GPU training
+

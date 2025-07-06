@@ -11,7 +11,7 @@ class Autoformer(BaseTimeSeriesModel):
     """
 
     def __init__(self, input_dim, output_dim, seq_len, pred_len, d_model=512, n_heads=8, d_ff=2048, 
-                 num_layers=3, dropout=0.1, moving_avg=25, factor=5, activation="gelu"):
+                 num_layers=2, dropout=0.1, moving_avg=25, factor=3, activation="gelu"):
         """
         Args:
             input_dim (int): Number of input features.

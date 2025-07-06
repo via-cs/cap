@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
-from CAP.cap.data.data import get_dataloaders
-from cap.models.lstm import TimeSeriesLSTM
-from cap.models.transformer import TimeSeriesTransformer
-from cap.models.Autoformer import Autoformer
-from cap.models.Informer import Informer
-from cap.models.FEDFormer import FEDformer
+from ..cap.data.data import get_dataloaders
+from ..cap.models.lstm import TimeSeriesLSTM
+from ..cap.models.transformer import TimeSeriesTransformer
+from ..cap.models.Autoformer import Autoformer
+from ..cap.models.Informer import Informer
+from ..cap.models.FEDFormer import FEDformer
 
 def load_model(model_path, input_dim, output_dim, seq_len,pred_len,hidden_dim=128, num_layers=2, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
     """

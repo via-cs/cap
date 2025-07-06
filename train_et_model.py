@@ -51,10 +51,10 @@ def main():
     # If Fedformer or TimesNet, force a larger window for stability
     mt = config['model']['type'].lower()
     if mt in ('fedformer', 'timesnet'):
-        print(f"{mt.title()} detected — overriding sequence and prediction lengths for stability.")
+        # print(f"{mt.title()} detected — overriding sequence and prediction lengths for stability.")
         # assume your config.yaml has seq_len/pred_len under model
         config['dataset']['seq_len']  = config['model'].get('seq_len', 96)
-        config['dataset']['pred_len'] = config['model'].get('pred_len', 24)
+        config['dataset']['pred_len'] = config['model'].get('pred_len', 96)
 
     # Print configuration
     print("Configuration:")
@@ -65,13 +65,13 @@ def main():
     # Get dataloaders
     # Default lengths
     seq_len  = config['model'].get('seq_len',  96)
-    pred_len = config['model'].get('pred_len', 24)
+    pred_len = config['model'].get('pred_len', 96)
 
     # Override for Autoformer (before passing to dataloader!)
-    if config['model']['type'].lower() == 'autoformer':
-        print("Autoformer detected — overriding sequence and prediction lengths for stability.")
-        seq_len = 96
-        pred_len = 24
+    # if config['model']['type'].lower() == 'autoformer':
+    #     # print("Autoformer detected — overriding sequence and prediction lengths for stability.")
+    #     seq_len = 96
+    #     pred_len = 96
 
     # Get dataloaders
     train_loader, valid_loader, test_loader = get_dataloaders(
@@ -89,107 +89,107 @@ def main():
 
 
     model_type = config['model']['type'].lower()
-    if model_type == 'lstm':
-        # 1) load raw CSV with NO per-sample normalization
-        raw_ds = CSVSequenceDataset(
-            config['dataset']['path'],
-            seq_len=seq_len,
-            pred_len=pred_len,
-            normalization=False
-        )
+    # if model_type == 'lstm':
+    #     # 1) load raw CSV with NO per-sample normalization
+    #     raw_ds = CSVSequenceDataset(
+    #         config['dataset']['path'],
+    #         seq_len=seq_len,
+    #         pred_len=pred_len,
+    #         normalization=False
+    #     )
 
-        # 2) split into train/valid/test by index
-        N = len(raw_ds)
-        idxs = list(range(N))
-        random.shuffle(idxs)
-        n1 = int(N * config['dataset']['train_size'])
-        n2 = int(N * config['dataset']['valid_size'])
+    #     # 2) split into train/valid/test by index
+    #     N = len(raw_ds)
+    #     idxs = list(range(N))
+    #     random.shuffle(idxs)
+    #     n1 = int(N * config['dataset']['train_size'])
+    #     n2 = int(N * config['dataset']['valid_size'])
 
-        train_idx = idxs[:n1]
-        valid_idx = idxs[n1:n1 + n2]
-        test_idx  = idxs[n1 + n2:]
+    #     train_idx = idxs[:n1]
+    #     valid_idx = idxs[n1:n1 + n2]
+    #     test_idx  = idxs[n1 + n2:]
 
-        train_base = Subset(raw_ds, train_idx)
-        valid_base = Subset(raw_ds, valid_idx)
-        test_base  = Subset(raw_ds, test_idx)
+    #     train_base = Subset(raw_ds, train_idx)
+    #     valid_base = Subset(raw_ds, valid_idx)
+    #     test_base  = Subset(raw_ds, test_idx)
 
-        # 3) fit a global StandardScaler on all train windows
-        all_X = np.concatenate([train_base[i][0].numpy() for i in range(len(train_base))], axis=0)
-        x_scaler = StandardScaler().fit(all_X)
-        # 3b) fit a StandardScaler on all train targets
-        all_Y = np.concatenate([train_base[i][1].numpy() for i in range(len(train_base))], axis=0)
-        y_scaler = StandardScaler().fit(all_Y)
+    #     # 3) fit a global StandardScaler on all train windows
+    #     all_X = np.concatenate([train_base[i][0].numpy() for i in range(len(train_base))], axis=0)
+    #     x_scaler = StandardScaler().fit(all_X)
+    #     # 3b) fit a StandardScaler on all train targets
+    #     all_Y = np.concatenate([train_base[i][1].numpy() for i in range(len(train_base))], axis=0)
+    #     y_scaler = StandardScaler().fit(all_Y)
 
-        # 4) wrap a dataset that applies this scaler
-        class ScaledDataset(torch.utils.data.Dataset):
-            def __init__(self, base_ds, x_scaler, y_scaler):
-                self.base     = base_ds
-                self.x_scaler = x_scaler
-                self.y_scaler = y_scaler
+    #     # 4) wrap a dataset that applies this scaler
+    #     class ScaledDataset(torch.utils.data.Dataset):
+    #         def __init__(self, base_ds, x_scaler, y_scaler):
+    #             self.base     = base_ds
+    #             self.x_scaler = x_scaler
+    #             self.y_scaler = y_scaler
 
-            def __len__(self):
-                return len(self.base)
+    #         def __len__(self):
+    #             return len(self.base)
 
-            def __getitem__(self, idx):
-                X, Y = self.base[idx]                    # X: [seq_len, feat], Y: [pred_len, feat]
-                # scale X exactly as before
-                X_np = X.numpy().reshape(-1, X.shape[-1])
-                Xs   = self.x_scaler.transform(X_np).reshape(X.shape)
-                # now scale Y
-                Y_np = Y.numpy().reshape(-1, Y.shape[-1])
-                Ys   = self.y_scaler.transform(Y_np).reshape(Y.shape)
-                return (
-                    torch.tensor(Xs, dtype=torch.float32),
-                    torch.tensor(Ys, dtype=torch.float32)
-                )
+    #         def __getitem__(self, idx):
+    #             X, Y = self.base[idx]                    # X: [seq_len, feat], Y: [pred_len, feat]
+    #             # scale X exactly as before
+    #             X_np = X.numpy().reshape(-1, X.shape[-1])
+    #             Xs   = self.x_scaler.transform(X_np).reshape(X.shape)
+    #             # now scale Y
+    #             Y_np = Y.numpy().reshape(-1, Y.shape[-1])
+    #             Ys   = self.y_scaler.transform(Y_np).reshape(Y.shape)
+    #             return (
+    #                 torch.tensor(Xs, dtype=torch.float32),
+    #                 torch.tensor(Ys, dtype=torch.float32)
+    #             )
 
-        train_ds = ScaledDataset(train_base, x_scaler, y_scaler)
-        valid_ds = ScaledDataset(valid_base, x_scaler, y_scaler)
-        test_ds  = ScaledDataset(test_base,  x_scaler, y_scaler)
+    #     train_ds = ScaledDataset(train_base, x_scaler, y_scaler)
+    #     valid_ds = ScaledDataset(valid_base, x_scaler, y_scaler)
+    #     test_ds  = ScaledDataset(test_base,  x_scaler, y_scaler)
 
-        # 5) build DataLoaders
-        train_loader = DataLoader(
-            train_ds,
-            batch_size=config['dataset']['batch_size'],
-            shuffle=True,
-            collate_fn=lambda batch: (
-                torch.stack([x for x, y in batch]),
-                torch.stack([y for x, y in batch])
-            )
-        )
-        valid_loader = DataLoader(
-            valid_ds,
-            batch_size=config['dataset']['batch_size'],
-            shuffle=False,
-            collate_fn=lambda batch: (
-                torch.stack([x for x, y in batch]),
-                torch.stack([y for x, y in batch])
-            )
-        )
-        test_loader = DataLoader(
-            test_ds,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=lambda batch: (
-                torch.stack([x for x, y in batch]),
-                torch.stack([y for x, y in batch])
-            )
-        )
+    #     # 5) build DataLoaders
+    #     train_loader = DataLoader(
+    #         train_ds,
+    #         batch_size=config['dataset']['batch_size'],
+    #         shuffle=True,
+    #         collate_fn=lambda batch: (
+    #             torch.stack([x for x, y in batch]),
+    #             torch.stack([y for x, y in batch])
+    #         )
+    #     )
+    #     valid_loader = DataLoader(
+    #         valid_ds,
+    #         batch_size=config['dataset']['batch_size'],
+    #         shuffle=False,
+    #         collate_fn=lambda batch: (
+    #             torch.stack([x for x, y in batch]),
+    #             torch.stack([y for x, y in batch])
+    #         )
+    #     )
+    #     test_loader = DataLoader(
+    #         test_ds,
+    #         batch_size=1,
+    #         shuffle=False,
+    #         collate_fn=lambda batch: (
+    #             torch.stack([x for x, y in batch]),
+    #             torch.stack([y for x, y in batch])
+    #         )
+    #     )
 
-    else:
+    # else:
         # everyone else—use your original per-sample normalization path
-        train_loader, valid_loader, test_loader = get_dataloaders(
-            path=config['dataset']['path'],
-            batch_size=config['dataset']['batch_size'],
-            shuffle=True,
-            train_size=config['dataset']['train_size'],
-            valid_size=config['dataset']['valid_size'],
-            test_size=config['dataset']['test_size'],
-            model_type=config['model']['type'],
-            normalization=config['dataset'].get('normalization', True),
-            seq_len=seq_len,
-            pred_len=pred_len
-        )
+    # train_loader, valid_loader, test_loader = get_dataloaders(
+    #     path=config['dataset']['path'],
+    #     batch_size=config['dataset']['batch_size'],
+    #     shuffle=True,
+    #     train_size=config['dataset']['train_size'],
+    #     valid_size=config['dataset']['valid_size'],
+    #     test_size=config['dataset']['test_size'],
+    #     model_type=config['model']['type'],
+    #     normalization=config['dataset'].get('normalization', True),
+    #     seq_len=seq_len,
+    #     pred_len=pred_len
+    # )
 
 
     # Get input and output dimensions from the first batch
