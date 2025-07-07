@@ -53,9 +53,9 @@ def train_model(
             pred_len=pred_len,
             d_model=hidden_dim,
             n_heads=8,
-            d_ff=4*hidden_dim,
+            d_ff=2048,
             num_layers=num_layers,
-            dropout=0.1
+            dropout=0.05
         ).to(device)
 
     # 3) Autoformer
@@ -67,10 +67,10 @@ def train_model(
             pred_len=pred_len,
             d_model=hidden_dim,
             n_heads=8,
-            d_ff=4*hidden_dim,
+            d_ff=2048,
             num_layers=num_layers,
-            dropout=0.1,
-            factor=1
+            dropout=0.05,
+            factor=3
         ).to(device)
 
     # 4) Informer & FEDformer via signature introspection
@@ -85,6 +85,14 @@ def train_model(
             'seq_len':  seq_len,
             'label_len': seq_len // 2,
             'pred_len':  pred_len,            # <— use pred_len instead of out_len
+            'd_model':   512,
+            'n_heads':   8,
+            'd_ff':      2048,
+            'e_layers':  1,
+            'd_layers':  1,
+            'dropout':   0.05,
+            'dropout':   0.05,
+            'factor':    3,
         }
 
         # Include any hyperparameters you’ve defined in your config
@@ -113,14 +121,14 @@ def train_model(
             seq_len=seq_len,
             label_len=label_len,
             pred_len=pred_len,
-            d_model=hidden_dim,
-            d_ff=4*hidden_dim,
+            d_model=16,
+            d_ff=32,
             embed='fixed',
             freq='h',
-            e_layers=num_layers,
-            dropout=0.1,
-            top_k=top_k,
-            num_kernels=num_kernels
+            e_layers=2,
+            dropout=0.05,
+            top_k=5,
+            num_kernels=6
         ).to(device)
 
     else:
