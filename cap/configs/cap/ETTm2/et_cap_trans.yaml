@@ -31,7 +31,7 @@ models:
 # Training Configuration
 training:
   epochs: 30
-  manager_lr: 0.00001
+  manager_lr: 0.001
   worker_lr: 0.001
   clip_value: 1.0
   patience: 5
@@ -40,7 +40,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training"
+  log_dir: "runs/et_cap/ETTm2"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 
