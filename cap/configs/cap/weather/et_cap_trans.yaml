@@ -31,8 +31,8 @@ models:
 # Training Configuration
 training:
   epochs: 30
-  manager_lr: 0.001
-  worker_lr: 0.001
+  manager_lr: 0.00001
+  worker_lr: 0.0001
   clip_value: 1.0
   patience: 5
   worker_update_steps: 2

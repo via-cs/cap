@@ -1,5 +1,5 @@
 data:
-  path: "dataset/long_term_forecast/weather/weather.csv"
+  path: "dataset/long_term_forecast/illness/national_illness.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
@@ -21,8 +21,8 @@ models:
   # Worker Models - based on quick_catp_test.py
   workers:
   
-    - name: "FEDFormer"
-      type: "fedformer"
+    - name: "Informer"
+      type: "informer"
       hidden_dim: 512
       num_layers: 2
       dropout: 0.05
@@ -42,7 +42,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training"
+  log_dir: "runs/et_cap"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 

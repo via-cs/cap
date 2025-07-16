@@ -173,7 +173,7 @@ def main():
             log_dir=config['logging']['log_dir'],
             clip_value=config['training']['clip_value'],
             worker_update_steps=config['training']['worker_update_steps'],
-            use_multi_gpu=True,  # Enable multi-GPU training
+            use_multi_gpu=False,  # Disable multi-GPU training to avoid NCCL errors
             distributed=False  # Use DataParallel instead of DDP for now
         )
         
@@ -192,6 +192,21 @@ def main():
         # 6. Evaluation
         print(" Evaluating on test set...")
         test_loss = trainer.validate(test_loader)
+        
+        # Get dataset name from config
+        dataset_name = os.path.basename(config['data']['path']).replace('.csv', '').replace('.txt', '')
+        
+        # Create model configuration summary
+        worker_configs = []
+        for worker_config in config['models']['workers']:
+            if 'count' in worker_config:
+                worker_configs.append(f"{worker_config['type']}x{worker_config['count']}")
+            else:
+                worker_configs.append(worker_config['type'])
+        model_config = f"Manager({config['models']['manager']['d_model']}d_{config['models']['manager']['num_layers']}l) + Workers({', '.join(worker_configs)})"
+        
+        # Save test loss to text file with dataset and model info
+        trainer.save_test_loss(test_loss, config['logging']['log_dir'], dataset_name, model_config)
         
         # 7. Results
         print("\n Training completed!")

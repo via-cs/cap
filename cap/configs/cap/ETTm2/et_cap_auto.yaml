@@ -1,5 +1,5 @@
 data:
-  path: "dataset/long_term_forecast/weather/weather.csv"
+  path: "dataset/long_term_forecast/ETT-small/ETTm2.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
@@ -21,8 +21,8 @@ models:
   # Worker Models - based on quick_catp_test.py
   workers:
   
-    - name: "FEDFormer"
-      type: "fedformer"
+    - name: "Autoformer"
+      type: "autoformer"
       hidden_dim: 512
       num_layers: 2
       dropout: 0.05
@@ -33,7 +33,7 @@ models:
 # Training Configuration
 training:
   epochs: 30
-  manager_lr: 0.001
+  manager_lr: 0.00001
   worker_lr: 0.0001
   clip_value: 1.0
   patience: 5
@@ -42,9 +42,9 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training"
-  checkpoint_dir: "saved_models/et_training"
-  plot_metrics: false  # No plotting for quick test
+  log_dir: "runs/et_training_multi_gpu"
+  checkpoint_dir: "saved_models/et_training_multi_gpu"
+  plot_metrics: false
 
 # Hardware Configuration
 hardware:

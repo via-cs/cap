@@ -1,5 +1,5 @@
 data:
-  path: "dataset/long_term_forecast/weather/weather.csv"
+  path: "dataset/long_term_forecast/ETT-small/ETTm2.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
@@ -20,21 +20,19 @@ models:
 
   # Worker Models - based on quick_catp_test.py
   workers:
-  
-    - name: "FEDFormer"
-      type: "fedformer"
+
+    - name: "Transformer"
+      type: "transformer"
       hidden_dim: 512
       num_layers: 2
       dropout: 0.05
       count: 3
-      
-
 
 # Training Configuration
 training:
   epochs: 30
-  manager_lr: 0.001
-  worker_lr: 0.0001
+  manager_lr: 0.00001
+  worker_lr: 0.001
   clip_value: 1.0
   patience: 5
   worker_update_steps: 2

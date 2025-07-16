@@ -4,7 +4,8 @@ import torch.nn.functional as F
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple, Union
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
+# Remove TensorBoard import
+# from torch.utils.tensorboard import SummaryWriter
 import logging
 from ..models.catp import ManagerModel, WorkerWrapper
 from ..models import Autoformer, FEDformer, Informer, TimesNet
@@ -13,6 +14,7 @@ import os
 import torch.distributed as dist
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torch.utils.data.distributed import DistributedSampler
+from datetime import datetime
 
 # class SinkhornDistance(nn.Module):
 #     """
@@ -218,6 +220,10 @@ class CATPTrainer:
         self.use_multi_gpu = use_multi_gpu
         self.distributed = distributed
         
+        # Initialize distributed training attributes
+        self.world_size = 1
+        self.rank = 0
+        
         # Auto-detect available GPUs
         if device is None:
             if torch.cuda.is_available():
@@ -329,9 +335,19 @@ class CATPTrainer:
         
         # Setup logging (only on main process for distributed training)
         if not self.distributed or self.rank == 0:
-            self.writer = SummaryWriter(log_dir)
+            # Create log directory if it doesn't exist
+            os.makedirs(log_dir, exist_ok=True)
+            # Remove detailed training log - we only need test loss
+            # self.log_file = open(os.path.join(log_dir, 'training.log'), 'w')
+            # self.log_file.write(f"Training started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            # self.log_file.write(f"Device: {self.device}\n")
+            # self.log_file.write(f"Multi-GPU: {self.use_multi_gpu}, Distributed: {self.distributed}\n")
+            # self.log_file.write(f"World Size: {self.world_size}, Rank: {self.rank}\n")
+            # self.log_file.write("-" * 50 + "\n")
+            pass
         else:
-            self.writer = None
+            # self.log_file = None
+            pass
         
         self.train_counts = torch.zeros(len(worker_models), device=self.device)
         self.total_count = 0
@@ -673,12 +689,16 @@ class CATPTrainer:
                 self.total_count += mask.sum().item()
 
         # Log metrics (only on main process for distributed training)
-        if self._is_main_process() and self.writer is not None:
-            step = epoch * total_batches + batch_idx
-            self.writer.add_scalar('Loss/worker', np.mean(worker_losses) if worker_losses else 0, step)
-            self.writer.add_scalar('Loss/manager', manager_loss.item(), step)
-            self.writer.add_scalar('Loss/entropy', entropy.item(), step)
-            self.writer.add_scalar('Loss/entropy_weight', entropy_weight, step)
+        # Remove detailed training logging - we only need test loss
+        # if self._is_main_process():
+        #     self.log_file.write(f"Epoch {epoch + 1}, Batch {batch_idx + 1}/{total_batches}\n")
+        #     self.log_file.write(f"  Worker Loss: {np.mean(worker_losses) if worker_losses else 0:.4f}\n")
+        #     self.log_file.write(f"  Manager Loss: {manager_loss.item():.8f}\n")
+        #     self.log_file.write(f"  KL Div: {kl_div.item():.6f}, Entropy: {entropy.item():.6f}\n")
+        #     self.log_file.write(f"  Diversity: {diversity_loss.item():.6f}, Wasserstein: {wass_loss.item():.6f}\n")
+        #     self.log_file.write(f"  Weights: entropy={entropy_weight:.3f}, diversity={diversity_weight:.3f}\n")
+        #     self.log_file.write(f"  Wasserstein (primary): {wass_loss.item():.6f}\n")
+        #     self.log_file.write("-" * 50 + "\n")
         
         return {
             'worker_loss': np.mean(worker_losses) if worker_losses else 0,
@@ -792,7 +812,7 @@ class CATPTrainer:
                     self._load_partial_state_dict(worker, state_dict)
                     # print(f"✓ Worker {i} loaded with partial matching")
                 except Exception as e2:
-                    print(f"❌ Error: Could not load worker {i} even with partial matching: {e2}")
+                    print(f" Error: Could not load worker {i} even with partial matching: {e2}")
                     print("   Worker will use random initialization")
         
         # Load optimizers
@@ -1079,6 +1099,9 @@ class CATPTrainer:
         if self.distributed:
             dist.barrier()
         
+        # Remove log file closing since we're not using detailed training logs
+        # self.close_log_file()
+        
         return {
             'train_losses': train_losses,
             'val_losses': val_losses,
@@ -1240,4 +1263,23 @@ class CATPTrainer:
                 rank=self.rank,
                 shuffle=shuffle
             )
-        return None 
+        return None
+    
+    def save_test_loss(self, test_loss: float, log_dir: str = "logs", dataset_name: str = "unknown", model_config: str = "unknown"):
+        """Save test loss to a text file with dataset and model information."""
+        if self._is_main_process():
+            os.makedirs(log_dir, exist_ok=True)
+            test_loss_file = os.path.join(log_dir, f'test_loss_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt')
+            with open(test_loss_file, 'w') as f:
+                f.write(f"Dataset: {dataset_name}\n")
+                f.write(f"Model: CATP\n")
+                f.write(f"Model Configuration: {model_config}\n")
+                f.write(f"Test Loss: {test_loss:.6f}\n")
+                f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Device: {self.device}\n")
+                f.write(f"Number of Workers: {len(self.worker_models)}\n")
+                f.write(f"Worker Models:\n")
+                for i, worker in enumerate(self.worker_models):
+                    model_name = type(self._get_underlying_model(worker).model).__name__
+                    f.write(f"  Worker {i+1}: {model_name}\n")
+            print(f"Test loss saved to: {test_loss_file}") 
