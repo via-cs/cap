@@ -284,15 +284,15 @@ class CATPTrainer:
                 # Try to wrap with DataParallel
                 self.manager_model = DataParallel(self.manager_model)
                 self.worker_models = [DataParallel(worker) for worker in self.worker_models]
-                print(f"✅ Successfully wrapped models with DataParallel")
+                print(f" Successfully wrapped models with DataParallel")
             except Exception as e:
-                print(f"⚠️ DataParallel failed: {e}")
-                print(f"🔄 Falling back to single GPU training")
+                print(f" DataParallel failed: {e}")
+                print(f" Falling back to single GPU training")
                 self.use_multi_gpu = False
                 self.num_gpus = 1
-                print(f"📦 Using single device training on {self.device}")
+                print(f" Using single device training on {self.device}")
         elif self.distributed:
-            print(f"📦 Wrapping models with DistributedDataParallel")
+            print(f" Wrapping models with DistributedDataParallel")
             self.manager_model = DistributedDataParallel(
                 self.manager_model,
                 device_ids=[self.rank],
@@ -306,7 +306,7 @@ class CATPTrainer:
                 ) for worker in self.worker_models
             ]
         else:
-            print(f"📦 Using single device training on {self.device}")
+            print(f" Using single device training on {self.device}")
         
         self.criterion = criterion
         self.clip_value = clip_value
@@ -805,7 +805,7 @@ class CATPTrainer:
                 worker.load_state_dict(state_dict)
                 # print(f"✓ Worker {i} loaded successfully")
             except RuntimeError as e:
-                print(f"⚠️  Warning: Could not load worker {i} state dict directly: {e}")
+                print(f"  Warning: Could not load worker {i} state dict directly: {e}")
                 
                 # Try to load with partial matching
                 try:
@@ -914,7 +914,7 @@ class CATPTrainer:
             Tuple of (epoch, best_val_loss) from the checkpoint
         """
         if force_fresh_start:
-            print("⚠️  Force fresh start requested - skipping checkpoint loading")
+            print("  Force fresh start requested - skipping checkpoint loading")
             return 0, float('inf')
             
         checkpoint_path = os.path.join(checkpoint_dir, 'best_model.pt')
@@ -1086,8 +1086,8 @@ class CATPTrainer:
         #         best_epoch, best_val_loss = self.load_best_model(checkpoint_dir)
         #         print(f"Loaded best model from epoch {best_epoch} with validation loss: {best_val_loss:.4f}")
         #     except Exception as e:
-        #         print(f"❌ Error loading best model: {e}")
-        #         print("⚠️  Using current model state for evaluation")
+        #         print(f" Error loading best model: {e}")
+        #         print("  Using current model state for evaluation")
         #         best_epoch = len(train_losses) - 1 if train_losses else 0
         #         best_val_loss = val_losses[-1] if val_losses else float('inf')
         # else:

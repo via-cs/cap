@@ -40,7 +40,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_cap/weather"
+  log_dir: "runs/et_training"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 

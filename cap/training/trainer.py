@@ -25,6 +25,7 @@ from ..models.Autoformer  import Autoformer
 from ..models.Informer    import Informer
 from ..models.FEDFormer   import FEDformer
 from ..models.TimesNet    import TimesNet
+from ..models.iTransformer import iTransformer
 
 def train_model(
     train_loader, valid_loader,
@@ -73,7 +74,25 @@ def train_model(
             factor=3
         ).to(device)
 
-    # 4) Informer & FEDformer via signature introspection
+    # 4) iTransformer
+    elif model_type == 'itransformer':
+        model = iTransformer(
+            input_dim=input_dim,
+            output_dim=output_dim,
+            seq_len=seq_len,
+            pred_len=pred_len,
+            d_model=hidden_dim,
+            n_heads=8,
+            d_ff=2048,
+            num_layers=num_layers,
+            dropout=0.05,
+            embed="fixed",
+            freq="h",
+            factor=5,
+            activation="gelu"
+        ).to(device)
+
+    # 5) Informer & FEDformer via signature introspection
     elif model_type in ('informer', 'fedformer'):
         ModelClass = Informer if model_type == 'informer' else FEDformer
 
@@ -87,7 +106,7 @@ def train_model(
             'pred_len':  pred_len,            # <— use pred_len instead of out_len
         }
 
-        # Include any hyperparameters you’ve defined in your config
+        # Include any hyperparameters you've defined in your config
         cfg = globals().get('config', None)
         if cfg:
             for key in ('factor','d_model','n_heads','e_layers','d_layers',
@@ -102,7 +121,7 @@ def train_model(
 
         model = ModelClass(**valid_kwargs).to(device)
 
-    # 5) TimesNet
+    # 6) TimesNet
     elif model_type == 'timesnet':
         label_len   = seq_len
         num_kernels = min(6, seq_len)
@@ -148,7 +167,7 @@ def train_model(
             if model_type == 'lstm':
                 output = output[:, -pred_len:, :]
             # Fedformer & TimesNet return one channel per input feature → keep only the target (first) channel
-            elif model_type in ('fedformer', 'timesnet'):
+            elif model_type in ('fedformer', 'timesnet', 'itransformer'):
                 output = output[..., :1]
             loss = criterion(output, target)
             loss.backward()

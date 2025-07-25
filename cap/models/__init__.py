@@ -8,6 +8,7 @@ from .Informer import Informer
 from .TimesNet import TimesNet
 from .lstm import TimeSeriesLSTM
 from .transformer import Transformer
+from .iTransformer import iTransformer
 
 __all__ = [
     'Transformer',
@@ -16,4 +17,5 @@ __all__ = [
     'TimesNet',
     'Informer',
     'TimeSeriesLSTM',
+    'iTransformer',
 ] 

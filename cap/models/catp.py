@@ -12,6 +12,7 @@ from .Informer import Informer
 from .transformer import Transformer
 from .lstm import TimeSeriesLSTM
 from .TimesNet import TimesNet
+from .iTransformer import iTransformer
 
 def available_models():
     return {
@@ -20,7 +21,8 @@ def available_models():
         'informer': Informer,
         'autoformer': Autoformer,
         'fedformer': FEDformer,
-        'timesnet': TimesNet
+        'timesnet': TimesNet,
+        'itransformer': iTransformer
     }
 
 class ManagerModel(nn.Module):
@@ -304,6 +306,23 @@ def create_worker_pool(model_configs: List[Dict[str, Any]], available_models: Di
                 dropout=dropout,
                 top_k=top_k,
                 num_kernels=num_kernels
+            ).to(device)
+        elif model_type == 'itransformer':
+            from .iTransformer import iTransformer
+            model = iTransformer(
+                input_dim=input_dim,
+                output_dim=output_dim,
+                seq_len=seq_len,
+                pred_len=pred_len,
+                d_model=hidden_dim,
+                n_heads=8,
+                d_ff=2048,
+                num_layers=num_layers,
+                dropout=dropout,
+                embed='fixed',
+                freq='h',
+                factor=model_args.get('factor', 3),
+                activation='gelu'
             ).to(device)
         else:
             raise ValueError(f"Unknown model type: {model_type}")

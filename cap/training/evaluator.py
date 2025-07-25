@@ -9,6 +9,7 @@ from ..models.transformer import Transformer
 from ..models.Autoformer import Autoformer
 from ..models.Informer import Informer
 from ..models.FEDFormer import FEDformer
+from ..models.iTransformer import iTransformer
 
 
 def load_model(model_path, input_dim, output_dim, seq_len, pred_len, 
@@ -27,7 +28,7 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         hidden_dim (int): Number of hidden units (for LSTM)
         num_layers (int): Number of layers
         device (str): Device to load model on ('cuda' or 'cpu')
-        model_type (str): Type of model to load ('lstm', 'transformer', 'autoformer', 'informer', 'fedformer')
+        model_type (str): Type of model to load ('lstm', 'transformer', 'autoformer', 'informer', 'fedformer', 'itransformer')
 
     Returns:
         nn.Module: The loaded model
@@ -43,6 +44,11 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         model = Autoformer(input_dim, output_dim, seq_len, pred_len, 
                          d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
                          dropout=0.1).to(device)
+    elif model_type == 'itransformer':
+        model = iTransformer(input_dim, output_dim, seq_len, pred_len, 
+                           d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
+                           dropout=0.05, embed="fixed", freq="h", factor=3, 
+                           activation="gelu").to(device)
     elif model_type == 'informer':
         model = Informer(input_dim, input_dim, seq_len, pred_len, 
                         d_model=512, n_heads=8, e_layers=3, d_layers=2, 
@@ -62,7 +68,7 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
 def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
     """
     Evaluate a trained model on test_loader. Returns average MSE on both normalized and original scale.
-    Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, etc.
+    Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, iTransformer, etc.
     """
     model_type = model_type.lower()
     model.to(device).eval()
@@ -85,10 +91,8 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
                 pred_len = target.shape[1]
                 output = output[:, -pred_len:, :]
             
-            if model_type == 'fedformer':
-                # slice off extra feature channels, keep only the 1-d target
-                output = output[..., :1]
-            if model_type == 'timesnet':
+            # FEDformer & TimesNet return one channel per input feature → keep only the target (first) channel
+            if model_type in ('fedformer', 'timesnet', 'itransformer'):
                 # slice off extra feature channels, keep only the 1-d target
                 output = output[..., :1]
 
