@@ -22,7 +22,7 @@ model:
   type: "itransformer"
   
   # Core model parameters
-  hidden_dim: 512          # d_model dimension
+  hidden_dim: 128          # d_model dimension
   seq_len: 96              # Input sequence length
   pred_len: 96             # Prediction horizon
   num_layers: 2            # Number of encoder layers
@@ -30,7 +30,7 @@ model:
   
   # Attention parameters
   n_heads: 8               # Number of attention heads
-  d_ff: 2048               # Feedforward dimension
+  d_ff: 128               # Feedforward dimension
   factor: 3                # Attention factor for FullAttention
   
   # Embedding parameters
