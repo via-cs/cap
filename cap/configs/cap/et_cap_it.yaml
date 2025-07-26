@@ -23,7 +23,7 @@ models:
   
     - name: "I-Transformer"
       type: "itransformer"
-      hidden_dim: 512
+      hidden_dim: 128
       num_layers: 2
       dropout: 0.05
       count: 3
@@ -43,7 +43,7 @@ training:
 # Logging Configuration
 logging:
   log_dir: "runs/et_cap"
-  checkpoint_dir: "saved_models/et_training_multi_gpu"
+  checkpoint_dir: "saved_models/et_itrans"
   plot_metrics: false
 
 # Hardware Configuration
