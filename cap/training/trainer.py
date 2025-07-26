@@ -81,14 +81,14 @@ def train_model(
             output_dim=output_dim,
             seq_len=seq_len,
             pred_len=pred_len,
-            d_model=hidden_dim,
+            d_model=128,
             n_heads=8,
-            d_ff=2048,
-            num_layers=num_layers,
+            d_ff=128,
+            num_layers=2,
             dropout=0.05,
             embed="fixed",
             freq="h",
-            factor=5,
+            factor=3,
             activation="gelu"
         ).to(device)
 
