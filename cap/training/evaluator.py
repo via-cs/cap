@@ -38,25 +38,25 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         model = TimeSeriesLSTM(input_dim, hidden_dim, output_dim, num_layers).to(device)
     elif model_type == 'transformer':
         model = Transformer(input_dim, output_dim, seq_len, pred_len, 
-                          d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
-                          dropout=0.1).to(device)
+                          d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
+                          dropout=0.05).to(device)
     elif model_type == 'autoformer':
         model = Autoformer(input_dim, output_dim, seq_len, pred_len, 
-                         d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
-                         dropout=0.1).to(device)
+                         d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
+                         dropout=0.05).to(device)
     elif model_type == 'itransformer':
         model = iTransformer(input_dim, output_dim, seq_len, pred_len, 
-                           d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
+                           d_model=128, n_heads=8, d_ff=128, num_layers=2, 
                            dropout=0.05, embed="fixed", freq="h", factor=3, 
                            activation="gelu").to(device)
     elif model_type == 'informer':
         model = Informer(input_dim, input_dim, seq_len, pred_len, 
-                        d_model=512, n_heads=8, e_layers=3, d_layers=2, 
-                        d_ff=2048, factor=5, dropout=0.1, activation='gelu').to(device)
+                        d_model=512, n_heads=8, e_layers=2, d_layers=1, 
+                        d_ff=2048, factor=3, dropout=0.05, activation='gelu').to(device)
     elif model_type == 'fedformer':
         model = FEDformer(input_dim, input_dim, pred_len, output_dim, seq_len, 
-                         label_len=12, d_model=512, n_heads=8, d_ff=2048, 
-                         num_layers=3, dropout=0.1).to(device)
+                         label_len=12, d_model=16, n_heads=8, d_ff=32, 
+                         num_layers=2, dropout=0.05).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     
