@@ -39,7 +39,7 @@ def run_command(command, times=1, delay=0, verbose=True, save_output=False):
                 shell=True, 
                 capture_output=False,  # Don't capture output in memory
                 text=True,
-                timeout=None  # 无超时限制
+                timeout=None  
             )
             
             end_time = time.time()

@@ -1,6 +1,86 @@
-# CAP: Time Series Forecasting Framework
+# CATF: A Manager-Worker Framework for Context-Aware Multivariate Time-Series Forecasting
 
-CAP is a Python package for time series forecasting that implements various state-of-the-art models including Transformer, FEDFormer, Autoformer, TimesNet, Informer, and LSTM.
+CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework.
+
+![Manager Worker Architecture](/docs/figs/MW_architecture.png)  
+*Figure 1: Manager Worker Architecture.*
+
+## Environment Setup
+
+Create and activate a virtual environment:
+```
+python3 -m venv venv && source venv/bin/activate
+```
+
+Install all required dependencies:
+```
+pip install -r requirement.txt
+```
+
+## Training
+
+### Run a Baseline Model:
+To train a standard baseline model on a specific dataset:
+```
+python train_et_model.py —config cap/configs/baseline/<dataset>/config_<dataset_lower_case>_<model>.yaml
+```
+Replace <dataset> and <model> with abbreviation of values.
+<dataset> includes: ETTh1, ETTh2, ETTm1, ETTm2, exchange, illness, weather;
+<model> includes: Informer (<info>), Autoformer (<auto>), EFDFormer (<fed>), TimesNet (<tiems>), i-Transformer (<it>)
+
+### Run CATF-<baseline>:
+To train CATF-enhanced variants of the baselines:
+```
+python train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml
+```
+
+### Run multiple times (with GPU selection and output saving):
+```
+python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
+```
+
+Example:
+``` 
+python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
+```
+
+## Results
+
+### CATF vs Baseline
+We compare CATF-enhanced models (CATF-Baselines) with their original counterparts across multiple benchmark datasets. 
+
+![Performance Comparison](/docs/figs/result_comp.png)  
+*Figure 2: CATF vs. baseline models across multiple datasets.*
+
+### CATF-TimesNet vs. Recent SOTA Models
+
+![SOTA Comparison](docs/figs/result_sota.png)  
+*Figure 3: CATF-TimesNet vs. recent state-of-the-art models.*
+
+
+## Repository Structure
+```
+CATF/
+├── cap/                        # Core package containing all modules (CAP stands for Context-Aware Prediction)
+│   ├── configs/                # YAML configuration files (for baselines and CATF models)
+│   ├── data/                   # Data loading and preprocessing utilities
+│   ├── models/                 # Model architectures (baselines and catf)
+│   │   └── catf.py             # CATF-specific model definitions
+│   ├── training/               # Training logic and trainer classes
+│   │   └── catf_trainer.py     # CATF training loop
+│
+├── run_multiple_times.py       # Script to run training multiple times with logging
+├── train_et_catf.py            # Main training script for CATF
+├── train_et_model.py           # Script for training baseline models
+├── requirement.txt             # Python package dependencies
+├── README.md                   # Project documentation (you are here)
+```
+
+
+
+
+
+<!-- ## Pypi Package Implementation
 
 ## Installation
 
@@ -114,4 +194,4 @@ model:
 ## License
 
 MIT License
-
+ -->

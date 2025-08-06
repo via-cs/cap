@@ -81,7 +81,7 @@ setup(
     python_requires='>=3.8,<3.13',
     test_suite='tests',
     tests_require=tests_require,
-    url='https://github.com/via-cs/cap',
+    url='https://github.com/anonymous/cap',
     version='0.7.1.dev0',
     zip_safe=False,
 )

@@ -12,10 +12,10 @@ CAP: Time Series Forecasting Framework
 
 **Date**: |today| **Version**: |version|
 
--  License: `MIT <https://github.com/via-cs/cap/blob/master/LICENSE>`__
+-  License: `MIT <https://github.com/anonymous/cap/blob/master/LICENSE>`__
 -  Development Status: `Alpha <https://pypi.org/search/?c=Development+Status+%3A%3A+3+-+Alpha>`__
--  Homepage: https://github.com/via-cs/cap
--  Documentation: https://via-cs.github.io/cap
+-  Homepage: https://github.com/anonymous/cap
+-  Documentation: https://anonymous.github.io/cap
 
 Overview
 --------
@@ -86,8 +86,8 @@ Documentation Sections
    :target: https://pypi.org/search/?c=Development+Status+%3A%3A+3+-+Alpha
 .. |PyPi Shield| image:: https://img.shields.io/pypi/v/cap.svg
    :target: https://pypi.python.org/pypi/cap
-.. |Run Tests Shield| image:: https://github.com/via-cs/cap/workflows/Run%20Tests/badge.svg
-   :target: https://github.com/via-cs/cap/actions?query=workflow%3A%22Run+Tests%22+branch%3Amaster
+.. |Run Tests Shield| image:: https://github.com/anonymous/cap/workflows/Run%20Tests/badge.svg
+   :target: https://github.com/anonymous/cap/actions?query=workflow%3A%22Run+Tests%22+branch%3Amaster
 .. |Downloads| image:: https://pepy.tech/badge/cap
    :target: https://pepy.tech/project/cap
 .. |License| image:: https://img.shields.io/badge/License-MIT-blue.svg

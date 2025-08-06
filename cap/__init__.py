@@ -1,5 +1,5 @@
 """
-CAP: A Time Series Forecasting Framework
+CATF: A Time Series Forecasting Framework
 """
 
 __version__ = '0.7.1.dev0'
@@ -11,8 +11,7 @@ from .models import (
     TimesNet,
     Informer,
     TimeSeriesLSTM,
-    catp,
-
+    catf,
 )
 
 from .data.data import (
@@ -23,8 +22,11 @@ from .training import (
     train_model,
     evaluate_model,
     load_model,
-    catp_trainer,
+    catf_trainer,
 )
+
+# Import CATF-specific functions from their correct modules
+from .models.catf import create_worker_pool, available_models
 
 __all__ = [
     'Transformer',
@@ -36,7 +38,9 @@ __all__ = [
     'train_model',
     'evaluate_model',
     'load_model',
-    'catp_trainer',
-    'catp',
+    'catf_trainer',
+    'catf',
     'get_dataloaders',
+    'create_worker_pool',
+    'available_models',
 ]

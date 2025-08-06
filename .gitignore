@@ -47,3 +47,4 @@ cap/venv
 
 saved_models/
 dataset/long_term_forecast/
+docs/_build/

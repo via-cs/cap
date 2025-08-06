@@ -40,11 +40,13 @@ Install from source
 
 The source code of **CAP** can be downloaded from the `Github repository`_.
 
-You can clone the repository and install it from source by running:
+.. _Github repository: https://github.com/anonymous/cap
+
+To clone the repository, run:
 
 .. code-block:: console
 
-    git clone https://github.com/via-cs/cap.git
+    git clone https://github.com/anonymous/cap.git
     cd cap
     pip install -e .
 
@@ -74,4 +76,3 @@ Replace ``cu118`` with your CUDA version if different.
 .. _virtualenv: https://virtualenv.pypa.io/en/latest/
 .. _pip: https://pip.pypa.io
 .. _PyPI: https://pypi.org/
-.. _Github repository: https://github.com/via-cs/cap
