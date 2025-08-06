@@ -24,11 +24,11 @@ To train a standard baseline model on a specific dataset:
 ```
 python train_et_model.py —config cap/configs/baseline/<dataset>/config_<dataset_lower_case>_<model>.yaml
 ```
-Replace <dataset> and <model> with abbreviation of values.
-<dataset> includes: ETTh1, ETTh2, ETTm1, ETTm2, exchange, illness, weather;
-<model> includes: Informer (<info>), Autoformer (<auto>), EFDFormer (<fed>), TimesNet (<tiems>), i-Transformer (<it>)
+Replace `<dataset>` and `<model>` with abbreviation of values.
+`<dataset>` includes: ETTh1, ETTh2, ETTm1, ETTm2, exchange, illness, weather;
+`<model>` includes: Informer (`<info>`), Autoformer (`<auto>`), EFDFormer (`<fed>`), TimesNet (`<tiems>`), i-Transformer (`<it>`)
 
-### Run CATF-<baseline>:
+### Run CATF-`<baseline>`:
 To train CATF-enhanced variants of the baselines:
 ```
 python train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml
