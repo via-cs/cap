@@ -9,6 +9,16 @@ CATF is a flexible framework built upon a manager–worker architecture for mult
   <em>Figure 1: Manager Worker Architecture.</em>
 </p>
 
+## Dataset Setup
+
+Download the full dataset from the [link](https://drive.google.com/file/d/1IaQKjvigrias2nDoz0eR0BZLlxGxv-8m/view?usp=sharing). And put the folder into dataset folder.
+
+It includes 7 different datasets:
+- Electricity Transformer Temperature (ETT) benchmark dataset (in `ETT-small` folder), which has 4 individual datasets: ETTh1.csv, ETTh2.csv, ETTm1.csv, ETTm2.csv.
+- Exchange rate dataset (in `exchange_rate` folder): exchange_rate.csv.
+- Weather dataset (in `weather` folder): weather.csv.
+- Illness dataset (in `illness` folder): national_illness.csv.
+
 ## Environment Setup
 
 Create and activate a virtual environment:
