@@ -5,8 +5,9 @@ CATF is a flexible framework built upon a manager–worker architecture for mult
 <p align="center">
   <img src="docs/figs/MW_architecture.png" alt="Manager Worker Architecture" width="500">
 </p>
-
-*Figure 1: Manager Worker Architecture.*
+<p align="center">
+  <em>Figure 1: Manager Worker Architecture.</em>
+</p>
 
 ## Environment Setup
 
