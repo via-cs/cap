@@ -1,6 +1,6 @@
 # CATF: A Manager-Worker Framework for Context-Aware Multivariate Time-Series Forecasting
 
-CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework.
+CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework. We include all our core implementation in **cap** folder, which stands for context-aware prediction.
 
 <p align="center">
   <img src="docs/figs/MW_architecture.png" alt="Manager Worker Architecture" width="500">
