@@ -2,7 +2,10 @@
 
 CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework.
 
-![Manager Worker Architecture](docs/figs/MW_architecture.png)  
+<p align="center">
+  <img src="docs/figs/MW_architecture.png" alt="Manager Worker Architecture" style="max-width:100%; height:auto;">
+</p>
+
 *Figure 1: Manager Worker Architecture.*
 
 ## Environment Setup
