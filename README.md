@@ -11,7 +11,7 @@ CATF is a flexible framework built upon a manager–worker architecture for mult
 
 ## Dataset Setup
 
-Download the full dataset from the [link](https://drive.google.com/file/d/1IaQKjvigrias2nDoz0eR0BZLlxGxv-8m/view?usp=sharing). And put the folder into `dataset` folder.
+Download the full dataset from the [link](https://drive.google.com/file/d/1IaQKjvigrias2nDoz0eR0BZLlxGxv-8m/view?usp=sharing). And put the `long_term_forecast` folder into `dataset` folder.
 
 It includes 7 different datasets:
 - Electricity Transformer Temperature (ETT) benchmark dataset (in `ETT-small` folder), which has 4 individual datasets: ETTh1.csv, ETTh2.csv, ETTm1.csv, ETTm2.csv.
