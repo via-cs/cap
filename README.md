@@ -53,7 +53,9 @@ python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python 
 ### CATF vs Baseline
 We compare CATF-enhanced models (CATF-Baselines) with their original counterparts across multiple benchmark datasets. 
 
-![Performance Comparison](docs/figs/result_comp.png)  
+<p align="left">
+  <img src="docs/figs/result_comp.png" alt="CATF vs. baseline models across multiple datasets" width="700">
+</p>
 *Figure 2: CATF vs. baseline models across multiple datasets.*
 
 ### CATF-TimesNet vs. Recent SOTA Models
