@@ -2,7 +2,7 @@
 
 CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework.
 
-![Manager Worker Architecture](/docs/figs/MW_architecture.png)  
+![Manager Worker Architecture](docs/figs/MW_architecture.png)  
 *Figure 1: Manager Worker Architecture.*
 
 ## Environment Setup
@@ -49,7 +49,7 @@ python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python 
 ### CATF vs Baseline
 We compare CATF-enhanced models (CATF-Baselines) with their original counterparts across multiple benchmark datasets. 
 
-![Performance Comparison](/docs/figs/result_comp.png)  
+![Performance Comparison](docs/figs/result_comp.png)  
 *Figure 2: CATF vs. baseline models across multiple datasets.*
 
 ### CATF-TimesNet vs. Recent SOTA Models
