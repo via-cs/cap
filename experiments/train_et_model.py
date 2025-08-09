@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Script to train a model for ET-data using the CAP framework.
+Script to train a baseline model.
 """
 
 import sys
