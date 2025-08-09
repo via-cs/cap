@@ -50,12 +50,12 @@ python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<m
 
 ### Run multiple times (with GPU selection and output saving):
 ```
-python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
+python experiments/run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
 ```
 
 Example:
 ``` 
-python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python experiments/train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
+python experiments/run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python experiments/train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
 ```
 
 ## Results
