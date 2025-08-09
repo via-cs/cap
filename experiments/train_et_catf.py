@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-ET (Electricity Transformer) CATF Training Script
+CATF Training Script
 
-A training script for CATF with 7 worker models on the Electricity Transformer dataset.
+A training script for CATF with worker models.
 
 Usage:
-    python train_et_catf.py --config configs/et_training_config.yaml
+    python train_et_catf.py --config configs/cap/et_training_config.yaml
 """
 
 import os
