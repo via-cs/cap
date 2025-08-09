@@ -72,7 +72,7 @@ class ManagerModel(nn.Module):
         """better init"""
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                # 使用 Kaiming 初始化
+                # Kaiming
                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
