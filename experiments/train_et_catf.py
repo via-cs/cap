@@ -21,7 +21,7 @@ from datetime import datetime
 import logging
 
 # Add the cap package to the path
-sys.path.append(str(Path(__file__).parent / "cap"))
+sys.path.append(str(Path(__file__).parent.parent.parent / "cap"))
 
 import cap
 from cap import get_dataloaders
@@ -232,7 +232,7 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len):
 def main():
     """Main training function."""
     parser = argparse.ArgumentParser(description="Train CATF on ET dataset")
-    parser.add_argument("--config", type=str, default="cap/configs/ETTh1/et_cap_times.yaml",
+    parser.add_argument("--config", type=str, default="../../cap/configs/ETTh1/et_cap_times.yaml",
                        help="Path to configuration file")
     parser.add_argument("--validate-config", action="store_true",
                        help="Validate configuration and exit")

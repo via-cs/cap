@@ -5,22 +5,26 @@
 Script to train a model for ET-data using the CAP framework.
 """
 
+import sys
 import os
+from pathlib import Path
 import yaml
 import torch
 import argparse
+
+# Add the cap package to the path
+sys.path.append(str(Path(__file__).parent.parent.parent / "cap"))
+
 from cap.data.data import get_dataloaders
-from cap.training import train_model, evaluate_model, load_model
-from torch.utils.data import DataLoader, Subset
-from cap.data.data import CSVSequenceDataset
-from sklearn.preprocessing import StandardScaler
+from cap.training.trainer import train_model 
+from cap.training.evaluator import evaluate_model
 import numpy as np
 import random
 
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Train a model for ET-data')
-    parser.add_argument('--config', type=str, default='cap/configs/ett_config.yaml',
+    parser.add_argument('--config', type=str, default='../../cap/configs/ett_config.yaml',
                         help='Path to configuration file')
     parser.add_argument('--model-type', type=str, default=None,
                         help='Override model type from config')

@@ -3,7 +3,7 @@
 CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework. We include all our core implementation in **cap** folder, which stands for context-aware prediction.
 
 <p align="center">
-  <img src="docs/figs/MW_architecture.png" alt="Manager Worker Architecture" width="500">
+  <img src="figs/MW_architecture.png" alt="Manager Worker Architecture" width="500">
 </p>
 <p align="center">
   <em>Figure 1: Manager Worker Architecture.</em>
@@ -36,7 +36,7 @@ pip install -r requirement.txt
 ### Run a Baseline Model:
 To train a standard baseline model on a specific dataset:
 ```
-python train_et_model.py —config cap/configs/baseline/<dataset>/config_<dataset_lower_case>_<model>.yaml
+python experiments/train_et_model.py —config cap/configs/baseline/<dataset>/config_<dataset_lower_case>_<model>.yaml
 ```
 Replace `<dataset>` and `<model>` with the abbreviations of the values.
 `<dataset>` includes: ETTh1, ETTh2, ETTm1, ETTm2, exchange, illness, weather;
@@ -45,17 +45,17 @@ Replace `<dataset>` and `<model>` with the abbreviations of the values.
 ### Run CATF-`<baseline>`:
 To train CATF-enhanced variants of the baselines:
 ```
-python train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml
+python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml
 ```
 
 ### Run multiple times (with GPU selection and output saving):
 ```
-python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
+python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
 ```
 
 Example:
 ``` 
-python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
+python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python experiments/train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
 ```
 
 ## Results
@@ -64,14 +64,14 @@ python run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python 
 We compare CATF-enhanced models (CATF-Baselines) with their original counterparts across multiple benchmark datasets. 
 
 <p align="left">
-  <img src="docs/figs/result_comp.png" alt="CATF vs. baseline models across multiple datasets" width="800">
+  <img src="figs/result_comp.png" alt="CATF vs. baseline models across multiple datasets" width="800">
 </p>
 
 *Figure 2: CATF vs. baseline models across multiple datasets.*
 
 ### CATF-TimesNet vs. Recent SOTA Models
 <p align="left">
-  <img src="docs/figs/result_sota.png" alt="CATF-TimesNet vs. recent state-of-the-art models" width="800">
+  <img src="figs/result_sota.png" alt="CATF-TimesNet vs. recent state-of-the-art models" width="800">
 </p>
 
 *Figure 3: CATF-TimesNet vs. recent state-of-the-art models.*
