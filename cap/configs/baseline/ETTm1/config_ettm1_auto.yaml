@@ -1,0 +1,38 @@
+dataset:
+  # path:  "dataset/long_term_forecast/ETT-small/ETTm2.csv"
+  path: "dataset/long_term_forecast/ETT-small/ETTm1.csv"
+  # path: "dataset/long_term_forecast/weather/weather.csv"
+
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+
+model:
+  # type: "lstm"
+  # hidden_dim: 8
+  # seq_len: 96
+  # pred_len: 96
+  # num_layers: 1
+  # dropout: 0.1
+
+  type: "autoformer"
+  hidden_dim: 512
+  seq_len: 96
+  pred_len: 96
+  num_layers: 2
+  dropout: 0.05
+
+  # type: "timesnet"
+  # hidden_dim: 16
+  # seq_len: 96
+  # pred_len: 96
+  # num_layers: 2
+  # dropout: 0.05
+
+training:
+  epochs: 10
+  learning_rate: 0.0001
+  patience: 3
+  device: "cuda"

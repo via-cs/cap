@@ -19,7 +19,7 @@ from cap import get_dataloaders
 
 def test_data_loading():
     """Test that data loading works correctly."""
-    print("🧪 Testing Data Loading")
+    print(" Testing Data Loading")
     print("=" * 30)
     
     # Configuration
@@ -92,7 +92,7 @@ def test_data_loading():
             print(f"   Test batch: {inputs.shape}, {targets.shape}")
             break
         
-        print("\n🎉 All data loading tests passed!")
+        print("\n All data loading tests passed!")
         return True
         
     except Exception as e:
@@ -105,6 +105,6 @@ if __name__ == "__main__":
     success = test_data_loading()
     if success:
         print("\n Data loading is working correctly!")
-        print("You can now run the CATP experiments.")
+        print("You can now run the CATF experiments.")
     else:
         print("\n Data loading has issues. Please check the configuration.") 

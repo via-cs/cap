@@ -1,6 +1,105 @@
-# CAP: Time Series Forecasting Framework
+# CATF: A Manager-Worker Framework for Context-Aware Multivariate Time-Series Forecasting
 
-CAP is a Python package for time series forecasting that implements various state-of-the-art models including Transformer, FEDFormer, Autoformer, TimesNet, Informer, and LSTM.
+CATF is a flexible framework built upon a manager–worker architecture for multivariate time-series forecasting. It enables specialized learning across different context patterns and improves predictive performance over standard baselines. This repository provides implementations of standard baseline models for multivariate time-series forecasting, as well as their enhanced versions using our proposed CATF framework. We include all our core implementation in **cap** folder, which stands for context-aware prediction.
+
+<p align="center">
+  <img src="figs/MW_architecture.png" alt="Manager Worker Architecture" width="500">
+</p>
+<p align="center">
+  <em>Figure 1: Manager Worker Architecture.</em>
+</p>
+
+## Dataset Setup
+
+Download the full dataset from the [link](https://drive.google.com/file/d/1IaQKjvigrias2nDoz0eR0BZLlxGxv-8m/view?usp=sharing). And put the `long_term_forecast` folder into `dataset` folder.
+
+It includes 7 different datasets:
+- Electricity Transformer Temperature (ETT) benchmark dataset (in `ETT-small` folder), which has 4 individual datasets: ETTh1.csv, ETTh2.csv, ETTm1.csv, ETTm2.csv.
+- Exchange rate dataset (in `exchange_rate` folder): exchange_rate.csv.
+- Weather dataset (in `weather` folder): weather.csv.
+- Illness dataset (in `illness` folder): national_illness.csv.
+
+## Environment Setup
+
+Create and activate a virtual environment:
+```
+python3 -m venv venv && source venv/bin/activate
+```
+
+Install all required dependencies:
+```
+pip install -r requirement.txt
+```
+
+## Training
+
+### Run a Baseline Model:
+To train a standard baseline model on a specific dataset:
+```
+python experiments/train_et_model.py —config cap/configs/baseline/<dataset>/config_<dataset_lower_case>_<model>.yaml
+```
+Replace `<dataset>` and `<model>` with the abbreviations of the values.
+`<dataset>` includes: ETTh1, ETTh2, ETTm1, ETTm2, exchange, illness, weather;
+`<model>` includes: Informer (`<info>`), Autoformer (`<auto>`), EFDFormer (`<fed>`), TimesNet (`<times>`), i-Transformer (`<it>`)
+
+### Run CATF-`<baseline>`:
+To train CATF-enhanced variants of the baselines:
+```
+python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml
+```
+
+### Run multiple times (with GPU selection and output saving):
+```
+python experiments/run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=<GPU_Number> && python experiments/train_et_catf.py --config cap/configs/cap/<dataset>/et_cap_<model>.yaml" --times <number of experiments> --save-output
+```
+
+Example:
+``` 
+python experiments/run_multiple_times.py --command "export CUDA_VISIBLE_DEVICES=0 && python experiments/train_et_catf.py --config cap/configs/cap/ETTh1/et_cap_times.yaml" --times 10 --save-output
+```
+
+## Results
+
+### CATF vs Baseline
+We compare CATF-enhanced models (CATF-Baselines) with their original counterparts across multiple benchmark datasets. 
+
+<p align="left">
+  <img src="figs/result_comp.png" alt="CATF vs. baseline models across multiple datasets" width="800">
+</p>
+
+*Figure 2: CATF vs. baseline models across multiple datasets.*
+
+### CATF-TimesNet vs. Recent SOTA Models
+<p align="left">
+  <img src="figs/result_sota.png" alt="CATF-TimesNet vs. recent state-of-the-art models" width="800">
+</p>
+
+*Figure 3: CATF-TimesNet vs. recent state-of-the-art models.*
+
+
+## Repository Structure
+```
+CATF/
+├── cap/                        # Core package containing all modules (CAP stands for Context-Aware Prediction)
+│   ├── configs/                # YAML configuration files (for baselines and CATF models)
+│   ├── data/                   # Data loading and preprocessing utilities
+│   ├── models/                 # Model architectures (baselines and catf)
+│   │   └── catf.py             # CATF-specific model definitions
+│   ├── training/               # Training logic and trainer classes
+│   │   └── catf_trainer.py     # CATF training loop
+│
+├── run_multiple_times.py       # Script to run training multiple times with logging
+├── train_et_catf.py            # Main training script for CATF
+├── train_et_model.py           # Script for training baseline models
+├── requirement.txt             # Python package dependencies
+├── README.md                   # Project documentation (you are here)
+```
+
+
+
+
+
+<!-- ## Pypi Package Implementation
 
 ## Installation
 
@@ -114,4 +213,4 @@ model:
 ## License
 
 MIT License
-
+ -->

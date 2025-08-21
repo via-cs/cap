@@ -38,25 +38,25 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         model = TimeSeriesLSTM(input_dim, hidden_dim, output_dim, num_layers).to(device)
     elif model_type == 'transformer':
         model = Transformer(input_dim, output_dim, seq_len, pred_len, 
-                          d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
-                          dropout=0.05).to(device)
+                          d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
+                          dropout=0.1).to(device)
     elif model_type == 'autoformer':
         model = Autoformer(input_dim, output_dim, seq_len, pred_len, 
-                         d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
-                         dropout=0.05).to(device)
+                         d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
+                         dropout=0.1).to(device)
     elif model_type == 'itransformer':
         model = iTransformer(input_dim, output_dim, seq_len, pred_len, 
-                           d_model=128, n_heads=8, d_ff=128, num_layers=2, 
+                           d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
                            dropout=0.05, embed="fixed", freq="h", factor=3, 
                            activation="gelu").to(device)
     elif model_type == 'informer':
         model = Informer(input_dim, input_dim, seq_len, pred_len, 
-                        d_model=512, n_heads=8, e_layers=2, d_layers=1, 
-                        d_ff=2048, factor=3, dropout=0.05, activation='gelu').to(device)
+                        d_model=512, n_heads=8, e_layers=3, d_layers=2, 
+                        d_ff=2048, factor=5, dropout=0.1, activation='gelu').to(device)
     elif model_type == 'fedformer':
         model = FEDformer(input_dim, input_dim, pred_len, output_dim, seq_len, 
-                         label_len=12, d_model=16, n_heads=8, d_ff=32, 
-                         num_layers=2, dropout=0.05).to(device)
+                         label_len=12, d_model=512, n_heads=8, d_ff=2048, 
+                         num_layers=3, dropout=0.1).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     
@@ -67,14 +67,14 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
 
 def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
     """
-    Evaluate a trained model on test_loader. Returns average MSE on both normalized and original scale.
+    Evaluate a trained model on test_loader. Returns average MSE on normalized scale.
     Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, iTransformer, etc.
     """
     model_type = model_type.lower()
     model.to(device).eval()
     criterion = nn.MSELoss(reduction='mean')
     total_loss_norm = 0.0
-    total_loss_orig = 0.0
+    # total_loss_orig = 0.0
     n_samples = 0
 
     with torch.no_grad():
@@ -101,38 +101,38 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
             loss_norm = criterion(output, target) * batch_size
             total_loss_norm += loss_norm.item()
             
-            # compute MSE on original scale data
-            try:
-                # Get the dataset from the dataloader
-                dataset = test_loader.dataset
-                
-                # Handle Subset wrapper (from torch.utils.data.Subset)
-                if hasattr(dataset, 'dataset'):
-                    # If dataset is wrapped in Subset, get the underlying dataset
-                    dataset = dataset.dataset
-                
-                if hasattr(dataset, 'inverse_transform'):
-                    # Convert predictions and targets to original scale
-                    output_orig = dataset.inverse_transform(output.cpu())
-                    target_orig = dataset.inverse_transform(target.cpu())
-                    
-                    # Compute MSE on original scale
-                    loss_orig = criterion(output_orig, target_orig) * batch_size
-                    total_loss_orig += loss_orig.item()
-                else:
-                    # If no inverse_transform available, use normalized MSE
-                    total_loss_orig += loss_norm.item()
-            except Exception as e:
-                # If inverse_transform fails, use normalized MSE
-                print(f"Warning: Could not compute original scale MSE: {e}")
-                total_loss_orig += loss_norm.item()
+            # # compute MSE on original scale data
+            # try:
+            #     # Get the dataset from the dataloader
+            #     dataset = test_loader.dataset
+            #     
+            #     # Handle Subset wrapper (from torch.utils.data.Subset)
+            #     if hasattr(dataset, 'dataset'):
+            #         # If dataset is wrapped in Subset, get the underlying dataset
+            #         dataset = dataset.dataset
+            #     
+            #     if hasattr(dataset, 'inverse_transform'):
+            #         # Convert predictions and targets to original scale
+            #         output_orig = dataset.inverse_transform(output.cpu())
+            #         target_orig = dataset.inverse_transform(target.cpu())
+            #         
+            #         # Compute MSE on original scale
+            #         loss_orig = criterion(output_orig, target_orig) * batch_size
+            #         total_loss_orig += loss_orig.item()
+            #     else:
+            #         # If no inverse_transform available, use normalized MSE
+            #         total_loss_orig += loss_norm.item()
+            # except Exception as e:
+            #     # If inverse_transform fails, use normalized MSE
+            #     print(f"Warning: Could not compute original scale MSE: {e}")
+            #     total_loss_orig += loss_norm.item()
             
             n_samples += batch_size
 
     avg_mse_norm = total_loss_norm / n_samples
-    avg_mse_orig = total_loss_orig / n_samples
+    # avg_mse_orig = total_loss_orig / n_samples
     
     print(f"Test MSE (normalized): {avg_mse_norm:.6f}")
-    print(f"Test MSE (original scale): {avg_mse_orig:.6f}")
+    # print(f"Test MSE (original scale): {avg_mse_orig:.6f}")
     
-    return avg_mse_orig  # Return original scale MSE for fair comparison
+    return avg_mse_norm  # Return normalized MSE

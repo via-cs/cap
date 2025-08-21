@@ -1,13 +1,12 @@
 # Tutorials
 
-CAP is a framework for time series forecasting. The following tutorials help you navigate: training models on different datasets, comparing model architectures, and tuning hyperparameters.
+CATF: A Manager-Worker Framework for Context-Aware Multivariate Time-Series Forecasting
 
 ## Available Tutorials
 
 | Tutorial | Description |
 |----------|-------------|
-| [ET_Data_Training.ipynb](ET_Data_Training.ipynb) | Train and compare different models on the Electricity Transformer (ET) dataset. Includes data loading, model training, evaluation, visualization, and hyperparameter tuning. |
-<!-- | [CAP_Tutorial.ipynb](CAP_Tutorial.ipynb) | General tutorial for using the CAP framework with various datasets and models. | -->
+| [train_catf_tutorial.ipynb](train_catf_tutorial.ipynb) | General tutorial for using the CATF framework with ETTh1 datasets and CATF-TimeNet. |
 
 ## Getting Started
 
@@ -25,14 +24,15 @@ To run the tutorials:
 
 3. Navigate to the tutorials directory and open the desired notebook.
 
-## ET-Data Training Tutorial
+## CATF Training Tutorial
 
-The [ET_Data_Training.ipynb](ET_Data_Training.ipynb) notebook demonstrates:
+The [train_catf_tutorial.ipynb](train_catf_tutorial.ipynb) notebook demonstrates:
 
-- Loading and preprocessing the ET-data
-- Training different models (LSTM, Transformer, FEDformer)
-- Evaluating and visualizing results
-- Comparing model architectures
-- Tuning hyperparameters for optimal performance
+1. Environment Setup
+2. Configuration Loading
+3. Data Preparation
+4. Model Construction
+5. Training and Evaluation
+6. Results
 
-This tutorial is ideal for understanding how to use the CAP framework for time series forecasting tasks.
+This tutorial is ideal for understanding how to use the CATF framework for time series forecasting tasks.

@@ -18,7 +18,7 @@ models:
     num_layers: 2
     dropout: 0.05
 
-  # Worker Models - based on quick_catp_test.py
+  # Worker Models - based on quick_catf_test.py
   workers:
   
     - name: "timesnet"
@@ -42,7 +42,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_cap"
+  log_dir: "runs/et_cap/test"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 

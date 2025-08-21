@@ -35,9 +35,9 @@ def _init_dim(path):
 
 def _normalize_data(data):
     """
-    Applies feature-wise normalization to input sequences.
-
-    Normalization formulas:`
+    Applies feature-wise normalization to input sequences using StandardScaler.
+    This function is kept for backward compatibility but should be replaced with
+    global normalization in the dataset classes.
 
     Args:
         data (list): List of sequences where each sequence is a list of feature vectors.
@@ -119,7 +119,7 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
      - auto-loads a CSV (first column = timestamp, last = target)
      - builds seq_len-step input (prev-target + all context cols)
        and pred_len-step output (target only)
-     - does per-sample z-normalization if requested
+     - does global z-normalization using StandardScaler fitted on training data
     """
     def __init__(self, csv_path,
                  seq_len=3, pred_len=3,
@@ -141,15 +141,53 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
         self.norm     = normalization
 
         if self.norm:
-            # global target scaler
-            self.y_mean = float(self.target.mean())
-            self.y_std  = float(self.target.std())
-            if self.y_std == 0.0:
-                self.y_std = 1.0
+            # Global target scaler - will be fitted on training data
+            self.y_scaler = StandardScaler()
+            # Global input scaler - will be fitted on training data
+            self.x_scaler = StandardScaler()
 
         # valid start indices: i in [1, N - (seq_len+pred_len)]
         last = self.N - (seq_len + pred_len)
         self.starts = list(range(1, last+1)) if last >= 1 else []
+
+    def fit_scalers(self, train_indices):
+        """
+        Fit the scalers on training data only.
+        This should be called after creating the dataset but before using it.
+        
+        Args:
+            train_indices: List of indices corresponding to training data
+        """
+        if not self.norm:
+            return
+            
+        # Gather all training input sequences
+        all_x_train = []
+        all_y_train = []
+        
+        for idx in train_indices:
+            if idx >= len(self.starts):
+                continue
+            s = self.starts[idx]
+            
+            # Build input sequence
+            inp = []
+            for t in range(s, s + self.seq_len):
+                inp.append([self.target[t-1], *self.context[t]])
+            all_x_train.append(np.array(inp))
+            
+            # Build output sequence
+            out = [[self.target[t]] for t in range(s + self.seq_len, s + self.seq_len + self.pred_len)]
+            all_y_train.append(np.array(out))
+        
+        # Stack all training data
+        if all_x_train:
+            x_train = np.concatenate(all_x_train, axis=0)  # (total_time_steps, features)
+            y_train = np.concatenate(all_y_train, axis=0)  # (total_time_steps, 1)
+            
+            # Fit scalers on training data
+            self.x_scaler.fit(x_train)
+            self.y_scaler.fit(y_train)
 
     def __len__(self):
         return len(self.starts)
@@ -167,12 +205,12 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
                               s + self.seq_len + self.pred_len)]
         
         if self.norm:
-            # per-sample normalize inputs (as before)
-            inp = _normalize_data(inp)
-            # **global** normalize outputs
-            # out is list of [ [y1], [y2], ... ] → shape (pred_len,1)
+            # Apply global normalization using fitted scalers
+            inp_arr = np.array(inp, dtype=np.float32)
             out_arr = np.array(out, dtype=np.float32)
-            out = ((out_arr - self.y_mean) / self.y_std).tolist()
+            
+            inp = self.x_scaler.transform(inp_arr).tolist()
+            out = self.y_scaler.transform(out_arr).tolist()
 
         return (
           torch.tensor(inp, dtype=torch.float32),    # [seq_len, C+1]
@@ -194,9 +232,9 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
         
         # Handle both batch and single sample cases
         if data.dim() == 3:  # [batch, pred_len, 1]
-            return data * self.y_std + self.y_mean
+            return torch.tensor(self.y_scaler.inverse_transform(data.numpy()), dtype=torch.float32)
         elif data.dim() == 2:  # [pred_len, 1]
-            return data * self.y_std + self.y_mean
+            return torch.tensor(self.y_scaler.inverse_transform(data.numpy()), dtype=torch.float32)
         else:
             raise ValueError(f"Expected 2D or 3D tensor, got {data.dim()}D")
 
@@ -206,31 +244,62 @@ class FedformerSequenceDataset(CSVSequenceDataset):
     train split's inputs—and then reuses that same scaler for valid/test.
     """
     def __init__(self, csv_path, seq_len=3, pred_len=3):
-        # turn off the built-in per-sample normalization
+        # turn off the built-in normalization since we'll handle it ourselves
         super().__init__(csv_path, seq_len=seq_len, pred_len=pred_len, normalization=False)
+        
+        # We'll use the same global normalization approach as CSVSequenceDataset
+        self.norm = True
+        self.x_scaler = StandardScaler()
+        self.y_scaler = StandardScaler()
 
-        # --- 1) gather ALL input sequences as one big array to fit the scaler ---
-        all_X = []
-        for i in range(len(self)):
-            X, _ = super().__getitem__(i)       # [seq_len, features]
-            all_X.append(X.numpy())
-        # stack into shape (N * seq_len, features)
-        arr = np.concatenate(all_X, axis=0)     # shape (total_time_steps, features)
-
-        # --- 2) fit StandardScaler on that array ---
-        self.scaler = StandardScaler().fit(arr)
+    def fit_scalers(self, train_indices):
+        """
+        Fit the scalers on training data only.
+        This should be called after creating the dataset but before using it.
+        
+        Args:
+            train_indices: List of indices corresponding to training data
+        """
+        if not self.norm:
+            return
+            
+        # Gather all training input sequences
+        all_x_train = []
+        all_y_train = []
+        
+        for idx in train_indices:
+            if idx >= len(self.starts):
+                continue
+            s = self.starts[idx]
+            
+            # Build input sequence
+            inp = []
+            for t in range(s, s + self.seq_len):
+                inp.append([self.target[t-1], *self.context[t]])
+            all_x_train.append(np.array(inp))
+            
+            # Build output sequence
+            out = [[self.target[t]] for t in range(s + self.seq_len, s + self.seq_len + self.pred_len)]
+            all_y_train.append(np.array(out))
+        
+        # Stack all training data
+        if all_x_train:
+            x_train = np.concatenate(all_x_train, axis=0)  # (total_time_steps, features)
+            y_train = np.concatenate(all_y_train, axis=0)  # (total_time_steps, 1)
+            
+            # Fit scalers on training data
+            self.x_scaler.fit(x_train)
+            self.y_scaler.fit(y_train)
 
     def __getitem__(self, idx):
         # get the raw (un-normalized) data
         X, Y = super().__getitem__(idx)         # X: [seq_len, features], Y: [pred_len, 1]
 
-        # apply the fitted scaler to X
-        # reshape → (seq_len, feat) → (seq_len*feat, ) then back
-        seq_len, feat = X.shape
-        X_scaled = self.scaler.transform(X.numpy().reshape(-1, feat))  # (seq_len*1, feat)
-        X_scaled = X_scaled.reshape(seq_len, feat)
+        # apply the fitted scaler to X and Y
+        X_scaled = self.x_scaler.transform(X.numpy())
+        Y_scaled = self.y_scaler.transform(Y.numpy())
 
-        return torch.tensor(X_scaled, dtype=torch.float32), Y
+        return torch.tensor(X_scaled, dtype=torch.float32), torch.tensor(Y_scaled, dtype=torch.float32)
 
     def inverse_transform(self, data):
         """
@@ -242,16 +311,12 @@ class FedformerSequenceDataset(CSVSequenceDataset):
         Returns:
             Tensor with values in original scale
         """
-        if hasattr(self, 'scaler'):
+        if hasattr(self, 'x_scaler') and hasattr(self, 'y_scaler'):
             # For input data that was scaled with StandardScaler
             if data.dim() == 3:  # [batch, seq_len, features]
-                batch_size, seq_len, feat = data.shape
-                data_reshaped = data.reshape(-1, feat)
-                data_inv = self.scaler.inverse_transform(data_reshaped)
-                return torch.tensor(data_inv.reshape(batch_size, seq_len, feat), dtype=torch.float32)
+                return torch.tensor(self.x_scaler.inverse_transform(data.reshape(-1, data.shape[-1])).reshape(data.shape), dtype=torch.float32)
             elif data.dim() == 2:  # [seq_len, features]
-                data_inv = self.scaler.inverse_transform(data.numpy())
-                return torch.tensor(data_inv, dtype=torch.float32)
+                return torch.tensor(self.x_scaler.inverse_transform(data.numpy()), dtype=torch.float32)
         
         # For target data, use parent's inverse_transform
         return super().inverse_transform(data)
@@ -320,20 +385,29 @@ def get_dataloaders(path,
 
         if model_type.lower() == 'fedformer':
             ds = FedformerSequenceDataset(path, seq_len=seq_len, pred_len=pred_len)
-
-        ds = CSVSequenceDataset(path,
-                                seq_len=seq_len,
-                                pred_len=pred_len,
-                                normalization=normalization)
+        else:
+            ds = CSVSequenceDataset(path,
+                                    seq_len=seq_len,
+                                    pred_len=pred_len,
+                                    normalization=normalization)
+        
         N    = len(ds)
         idxs = list(range(N))
         random.shuffle(idxs)
         n1 = int(N * train_size)
         n2 = int(N * valid_size)
 
-        train_ds = Subset(ds, idxs[:n1])
-        valid_ds = Subset(ds, idxs[n1:n1+n2])
-        test_ds  = Subset(ds, idxs[n1+n2:])
+        train_indices = idxs[:n1]
+        valid_indices = idxs[n1:n1+n2]
+        test_indices  = idxs[n1+n2:]
+
+        # Fit scalers on training data only (for global normalization)
+        if normalization:
+            ds.fit_scalers(train_indices)
+
+        train_ds = Subset(ds, train_indices)
+        valid_ds = Subset(ds, valid_indices)
+        test_ds  = Subset(ds, test_indices)
 
         ds_train, ds_valid, ds_test = train_ds, valid_ds, test_ds
         in_dim   = 1 + len(ds.context_cols)

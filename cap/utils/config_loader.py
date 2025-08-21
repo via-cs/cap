@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Configuration Loader for CATP Training
+Configuration Loader for CATF Training
 ======================================
 
-Utility functions to load and validate YAML configuration files for CATP training.
+Utility functions to load and validate YAML configuration files for CATF training.
 """
 
 import yaml
@@ -140,7 +140,7 @@ def print_config_summary(config: Dict[str, Any]):
         config: Configuration dictionary
     """
     print("=" * 50)
-    print("CATP Training Configuration Summary")
+    print("CATF Training Configuration Summary")
     print("=" * 50)
     
     # Data
@@ -167,7 +167,7 @@ def print_config_summary(config: Dict[str, Any]):
 
 def main():
     """Command line interface for configuration loading."""
-    parser = argparse.ArgumentParser(description="Load and validate CATP configuration")
+    parser = argparse.ArgumentParser(description="Load and validate CATF configuration")
     parser.add_argument("config_path", help="Path to YAML configuration file")
     parser.add_argument("--validate", action="store_true", help="Validate configuration")
     parser.add_argument("--summary", action="store_true", help="Print configuration summary")

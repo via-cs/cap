@@ -18,7 +18,7 @@ models:
     num_layers: 2
     dropout: 0.05
 
-  # Worker Models - based on quick_catp_test.py
+  # Worker Models - based on quick_catf_test.py
   workers:
   
     - name: "Informer"
