@@ -70,7 +70,7 @@ class TimesNet(nn.Module):
     """
 
     def __init__(self, enc_in, seq_len, label_len, pred_len, c_out, d_model=16, embed="fixed", freq="h",
-                 dropout=0.05, d_ff=32, num_kernels=6, top_k=5, e_layers=2):
+                 dropout=0.05, d_ff=32, num_kernels=6, top_k=5, e_layers=2, skip_normalization=True):
         """
         Args:
             enc_in (int): Number of input features.
@@ -86,12 +86,14 @@ class TimesNet(nn.Module):
             num_kernels (int): Number of convolution kernels.
             top_k (int): Number of periodic patterns detected.
             e_layers (int): Number of layers in TimesNet.
+            skip_normalization (bool): Skip internal normalization if data is already normalized.
         """
         super(TimesNet, self).__init__()
 
         self.pred_len = pred_len
         self.label_len = label_len
         self.seq_len = seq_len
+        self.skip_normalization = skip_normalization
 
         # Embedding
         self.enc_embedding = DataEmbedding(enc_in, d_model, embed, freq, dropout)
@@ -121,11 +123,17 @@ class TimesNet(nn.Module):
         """
         Forecasts future values using TimesNet.
         """
-        # Normalization (from Non-Stationary Transformer)
-        means = x_enc.mean(1, keepdim=True).detach()
-        x_enc = x_enc - means
-        stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
-        x_enc /= stdev
+        # Store original means and stdev for de-normalization if needed
+        if not self.skip_normalization:
+            # Normalization (from Non-Stationary Transformer)
+            means = x_enc.mean(1, keepdim=True).detach()
+            x_enc = x_enc - means
+            stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
+            x_enc /= stdev
+        else:
+            # Skip normalization - assume data is already normalized
+            means = torch.zeros_like(x_enc.mean(1, keepdim=True))
+            stdev = torch.ones_like(torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5))
 
         # Embedding
         enc_out = self.enc_embedding(x_enc, x_mark_enc)  # Shape: [B, T, C]
@@ -140,9 +148,10 @@ class TimesNet(nn.Module):
         # Projection Back
         dec_out = self.projection(enc_out)
 
-        # De-Normalization
-        dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
-        dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
+        # De-Normalization (only if we did normalization)
+        if not self.skip_normalization:
+            dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
+            dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
 
         return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Return only the predicted part
 

@@ -22,7 +22,7 @@ model:
   seq_len: 96
   pred_len: 96
   num_layers: 2
-  dropout: 0.05
+  dropout: 0.1
 
   # type: "timesnet"
   # hidden_dim: 16

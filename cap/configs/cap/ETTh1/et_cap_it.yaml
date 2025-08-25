@@ -1,5 +1,5 @@
 data:
-  path: "dataset/ETT-small/ETTh1.csv"
+  path: "dataset/long_term_forecast/ETT-small/ETTh1.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
@@ -42,7 +42,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_cap"
+  log_dir: "runs/etth1/it"
   checkpoint_dir: "saved_models/et_itrans"
   plot_metrics: false
 

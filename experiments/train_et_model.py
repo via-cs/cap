@@ -11,15 +11,58 @@ from pathlib import Path
 import yaml
 import torch
 import argparse
+import logging
+from datetime import datetime
 
 # Add the cap package to the path
-sys.path.append(str(Path(__file__).parent.parent.parent / "cap"))
+sys.path.append(str(Path(__file__).parent.parent / "cap"))
 
 from cap.data.data import get_dataloaders
 from cap.training.trainer import train_model 
 from cap.training.evaluator import evaluate_model
 import numpy as np
 import random
+
+def setup_logging():
+    """Setup logging configuration for saving results."""
+    # Create logs directory if it doesn't exist
+    os.makedirs("logs", exist_ok=True)
+    
+    # Create a timestamp for the log file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"logs/training_results_{timestamp}.log"
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename),
+            logging.StreamHandler()  # Also print to console
+        ]
+    )
+    
+    return log_filename
+
+def log_results(model_type, test_mse, config, log_filename):
+    """Log the test results to a CSV file for easy analysis."""
+    # Create results CSV file
+    results_file = "logs/test_results.csv"
+    
+    # Check if file exists to determine if we need to write headers
+    file_exists = os.path.exists(results_file)
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    with open(results_file, 'a') as f:
+        if not file_exists:
+            # Write header
+            f.write("timestamp,dataset,model_type,test_mse,seq_len,pred_len,hidden_dim,num_layers,epochs,learning_rate,device\n")
+        
+        # Write result row
+        f.write(f"{timestamp},{config['dataset']['path']},{model_type},{test_mse:.6f},{config['model'].get('seq_len', 96)},{config['model'].get('pred_len', 96)},{config['model']['hidden_dim']},{config['model']['num_layers']},{config['training']['epochs']},{config['training']['learning_rate']},{config['training']['device']}\n")
+    
+    print(f"Results saved to {results_file}")
 
 def main():
     # Parse command line arguments
@@ -34,6 +77,10 @@ def main():
                         help='Override device from config')
     args = parser.parse_args()
 
+    # Setup logging
+    log_filename = setup_logging()
+    logging.info("Starting training session")
+
     # Load configuration
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
@@ -41,7 +88,7 @@ def main():
     # Check CUDA availability and fall back to CPU if needed
     cfg_dev = config['training']['device']
     if cfg_dev.lower() == 'cuda' and not torch.cuda.is_available():
-        print("Warning: CUDA requested but not available. Falling back to CPU.")
+        logging.warning("CUDA requested but not available. Falling back to CPU.")
         config['training']['device'] = 'cpu'
 
     # Override config with command line arguments if provided
@@ -61,10 +108,10 @@ def main():
         config['dataset']['pred_len'] = config['model'].get('pred_len', 96)
 
     # Print configuration
-    print("Configuration:")
-    print(f"Dataset: {config['dataset']['path']}")
-    print(f"Model: {config['model']['type']}")
-    print(f"Training: {config['training']['epochs']} epochs, {config['training']['device']}")
+    logging.info("Configuration:")
+    logging.info(f"Dataset: {config['dataset']['path']}")
+    logging.info(f"Model: {config['model']['type']}")
+    logging.info(f"Training: {config['training']['epochs']} epochs, {config['training']['device']}")
 
     # Get dataloaders
     # Default lengths
@@ -205,12 +252,13 @@ def main():
         pred_len = targets.shape[1]
         break
 
-    print(f"Input dimension: {input_dim}")
-    print(f"Output dimension: {output_dim}")
-    print(f"Sequence length: {seq_len}")
-    print(f"Prediction length: {pred_len}")
+    logging.info(f"Input dimension: {input_dim}")
+    logging.info(f"Output dimension: {output_dim}")
+    logging.info(f"Sequence length: {seq_len}")
+    logging.info(f"Prediction length: {pred_len}")
 
     # Train model
+    logging.info("Starting model training...")
     model = train_model(
         train_loader=train_loader,
         valid_loader=valid_loader,
@@ -231,11 +279,17 @@ def main():
     model_path = f"saved_models/et_{config['model']['type']}_model.pth"
     os.makedirs("saved_models", exist_ok=True)
     torch.save(model.state_dict(), model_path)
-    print(f"Model saved to {model_path}")
+    logging.info(f"Model saved to {model_path}")
 
     # Evaluate model
+    logging.info("Starting model evaluation...")
     mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'])
-    print(f"Test MSE: {mse:.4f}")
+    logging.info(f"Test MSE: {mse:.6f}")
+    
+    # Log results to CSV file
+    log_results(config['model']['type'], mse, config, log_filename)
+    
+    logging.info("Training session completed successfully")
 
 if __name__ == "__main__":
     main() 

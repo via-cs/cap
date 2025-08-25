@@ -83,43 +83,55 @@ def train_model(
             pred_len=pred_len,
             d_model=hidden_dim,
             n_heads=8,
-            d_ff=2048,
+            d_ff=128,
             num_layers=num_layers,
             dropout=0.05,
             embed="fixed",
             freq="h",
-            factor=5,
+            factor=3,
             activation="gelu"
         ).to(device)
 
-    # 5) Informer & FEDformer via signature introspection
-    elif model_type in ('informer', 'fedformer'):
-        ModelClass = Informer if model_type == 'informer' else FEDformer
+    # 5) Informer & FEDformer
+    elif model_type == 'informer':
+        model = Informer(
+            enc_in=input_dim,
+            dec_in=input_dim,
+            pred_len=pred_len,
+            label_len=seq_len // 2,
+            d_model=hidden_dim,
+            n_heads=8,
+            e_layers=num_layers,
+            d_layers=1,
+            d_ff=2048,
+            dropout=0.05,
+            activation="gelu",
+            distil=False,
+            embed="fixed",
+            freq="h",
+            factor=3
+        ).to(device)
 
-        # Build a dict of candidate kwargs
-        kwargs = {
-            'enc_in':   input_dim,
-            'dec_in':   input_dim,
-            'c_out':    output_dim,
-            'seq_len':  seq_len,
-            'label_len': seq_len // 2,
-            'pred_len':  pred_len,            # <— use pred_len instead of out_len
-        }
-
-        # Include any hyperparameters you've defined in your config
-        cfg = globals().get('config', None)
-        if cfg:
-            for key in ('factor','d_model','n_heads','e_layers','d_layers',
-                        'd_ff','dropout','activation','output_attention',
-                        'distil','mix','embed','freq','device'):
-                if key in cfg['model']:
-                    kwargs[key] = cfg['model'][key]
-
-        # Filter to only parameters that ModelClass.__init__ actually accepts
-        sig = inspect.signature(ModelClass)
-        valid_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-        model = ModelClass(**valid_kwargs).to(device)
+    elif model_type == 'fedformer':
+        model = FEDformer(
+            enc_in=input_dim,
+            dec_in=input_dim,
+            pred_len=pred_len,
+            c_out=output_dim,
+            seq_len=seq_len,
+            label_len=seq_len // 2,
+            d_model=hidden_dim,
+            n_heads=8,
+            e_layers=num_layers,
+            d_layers=1,
+            d_ff=2048,
+            dropout=0.05,
+            activation="gelu",
+            distil=False,
+            embed="fixed",
+            freq="h",
+            factor=3
+        ).to(device)
 
     # 6) TimesNet
     elif model_type == 'timesnet':
@@ -132,7 +144,7 @@ def train_model(
             seq_len=seq_len,
             label_len=label_len,
             pred_len=pred_len,
-            d_model=16,
+            d_model=hidden_dim,
             d_ff=32,
             embed='fixed',
             freq='h',

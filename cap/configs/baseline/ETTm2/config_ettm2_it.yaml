@@ -26,7 +26,7 @@ model:
   seq_len: 96              # Input sequence length
   pred_len: 96             # Prediction horizon
   num_layers: 2            # Number of encoder layers
-  dropout: 0.05            # Dropout rate
+  dropout: 0.1            # Dropout rate
   
   # Attention parameters
   n_heads: 8               # Number of attention heads

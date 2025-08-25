@@ -15,7 +15,7 @@ class iTransformer(nn.Module):
     """
 
     def __init__(self, input_dim, output_dim, seq_len, pred_len, d_model=512, n_heads=8, d_ff=2048, 
-                 num_layers=2, dropout=0.05, embed="fixed", freq="h", factor=5, activation="gelu"):
+                 num_layers=2, dropout=0.05, embed="fixed", freq="h", factor=5, activation="gelu", skip_normalization=True):
         """
         Args:
             input_dim (int): Number of input features.
@@ -31,12 +31,14 @@ class iTransformer(nn.Module):
             freq (str): Frequency encoding for timestamps.
             factor (int): Attention factor.
             activation (str): Activation function.
+            skip_normalization (bool): Skip internal normalization if data is already normalized.
         """
         super(iTransformer, self).__init__()
         self.seq_len = seq_len
         self.pred_len = pred_len
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.skip_normalization = skip_normalization
         
         # Embedding
         self.enc_embedding = DataEmbedding_inverted(seq_len, d_model, embed, freq, dropout)
@@ -81,11 +83,17 @@ class iTransformer(nn.Module):
         Returns:
             torch.Tensor: Forecasted output of shape (batch_size, pred_len, output_dim)
         """
-        # Normalization from Non-stationary Transformer
-        means = x_enc.mean(1, keepdim=True).detach()
-        x_enc = x_enc - means
-        stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
-        x_enc /= stdev
+        # Store original means and stdev for de-normalization if needed
+        if not self.skip_normalization:
+            # Normalization from Non-stationary Transformer
+            means = x_enc.mean(1, keepdim=True).detach()
+            x_enc = x_enc - means
+            stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
+            x_enc /= stdev
+        else:
+            # Skip normalization - assume data is already normalized
+            means = torch.zeros_like(x_enc.mean(1, keepdim=True))
+            stdev = torch.ones_like(torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5))
 
         _, _, N = x_enc.shape
 
@@ -96,9 +104,10 @@ class iTransformer(nn.Module):
         # Projection and transpose
         dec_out = self.projection(enc_out).permute(0, 2, 1)[:, :, :N]
         
-        # De-Normalization from Non-stationary Transformer
-        dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
-        dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
+        # De-Normalization from Non-stationary Transformer (only if we did normalization)
+        if not self.skip_normalization:
+            dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
+            dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
         
         return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)
 

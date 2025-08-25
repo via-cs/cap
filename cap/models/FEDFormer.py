@@ -151,7 +151,8 @@ class FEDformer(nn.Module):
         # Final output
         dec_out = trend_part + seasonal_part
         # print(dec_out[:, -self.pred_len:, :].shape) 
-        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Shape: (batch, pred_len, 1) - add dimension
+        # For univariate forecasting, return only the target feature (first feature)
+        return dec_out[:, -self.pred_len:, :1]  # Shape: (batch, pred_len, 1)
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """

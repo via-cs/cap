@@ -10,6 +10,7 @@ from ..models.Autoformer import Autoformer
 from ..models.Informer import Informer
 from ..models.FEDFormer import FEDformer
 from ..models.iTransformer import iTransformer
+from ..models.TimesNet import TimesNet
 
 
 def load_model(model_path, input_dim, output_dim, seq_len, pred_len, 
@@ -38,25 +39,29 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         model = TimeSeriesLSTM(input_dim, hidden_dim, output_dim, num_layers).to(device)
     elif model_type == 'transformer':
         model = Transformer(input_dim, output_dim, seq_len, pred_len, 
-                          d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
-                          dropout=0.1).to(device)
+                          d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
+                          dropout=0.05).to(device)
     elif model_type == 'autoformer':
         model = Autoformer(input_dim, output_dim, seq_len, pred_len, 
-                         d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
-                         dropout=0.1).to(device)
+                         d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
+                         dropout=0.05).to(device)
     elif model_type == 'itransformer':
         model = iTransformer(input_dim, output_dim, seq_len, pred_len, 
-                           d_model=512, n_heads=8, d_ff=2048, num_layers=3, 
+                           d_model=512, n_heads=8, d_ff=2048, num_layers=2, 
                            dropout=0.05, embed="fixed", freq="h", factor=3, 
-                           activation="gelu").to(device)
+                           activation="gelu", skip_normalization=True).to(device)
     elif model_type == 'informer':
         model = Informer(input_dim, input_dim, seq_len, pred_len, 
                         d_model=512, n_heads=8, e_layers=3, d_layers=2, 
-                        d_ff=2048, factor=5, dropout=0.1, activation='gelu').to(device)
+                        d_ff=2048, factor=3, dropout=0.05, activation='gelu').to(device)
     elif model_type == 'fedformer':
         model = FEDformer(input_dim, input_dim, pred_len, output_dim, seq_len, 
                          label_len=12, d_model=512, n_heads=8, d_ff=2048, 
-                         num_layers=3, dropout=0.1).to(device)
+                         e_layers=2, d_layers=1, dropout=0.05).to(device)
+    elif model_type == 'timesnet':
+        model = TimesNet(input_dim, seq_len, label_len=12, pred_len=pred_len, c_out=output_dim, 
+                         d_model=512, embed="fixed", freq="h", dropout=0.1, d_ff=1024, 
+                         num_kernels=6, top_k=5, e_layers=2, skip_normalization=True).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     
@@ -91,10 +96,8 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
                 pred_len = target.shape[1]
                 output = output[:, -pred_len:, :]
             
-            # FEDformer & TimesNet return one channel per input feature → keep only the target (first) channel
-            if model_type in ('fedformer', 'timesnet', 'itransformer'):
-                # slice off extra feature channels, keep only the 1-d target
-                output = output[..., :1]
+            # Note: FEDformer, iTransformer, and TimesNet already return correct shape (batch, pred_len, 1)
+            # No additional slicing needed
 
             # compute MSE on normalized data
             batch_size = target.size(0)

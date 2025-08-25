@@ -42,7 +42,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training"
+  log_dir: "runs/etth1/fed"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 
