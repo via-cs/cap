@@ -1,0 +1,23 @@
+dataset:
+  path: "dataset/long_term_forecast/weather/weather.csv"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+
+model:
+
+  type: "timesnet"
+  d_model: 32
+  seq_len: 96
+  pred_len: 96
+  num_layers: 2
+  dropout: 0.1
+  d_ff: 32
+
+training:
+  epochs: 10
+  learning_rate: 0.0001
+  patience: 3
+  device: "cuda"

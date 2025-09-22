@@ -28,6 +28,7 @@ class Autoformer(BaseTimeSeriesModel):
             activation (str): Activation function.
         """
         super(Autoformer, self).__init__()
+        print(f"Autoformer initialized with d_model: {d_model}, n_heads: {n_heads}, d_ff: {d_ff}, num_layers: {num_layers}, dropout: {dropout}")
         self.seq_len = seq_len
         self.pred_len = pred_len
         self.label_len = seq_len // 2  # Middle portion of sequence for decoder input

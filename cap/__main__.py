@@ -26,6 +26,9 @@ def main():
     train_parser.add_argument('--batch-size', type=int, default=32, help='Batch size')
     train_parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu',
                              help='Device to train on (cuda or cpu)')
+    train_parser.add_argument('--d-model', type=int, default=512, help='Model dimension')
+    train_parser.add_argument('--d-ff', type=int, default=2048, help='Feed-forward dimension')
+    train_parser.add_argument('--num-layers', type=int, default=2, help='Number of layers')
     
     # Prediction command
     predict_parser = subparsers.add_parser('predict', help='Make predictions with a trained model')
@@ -77,10 +80,13 @@ def main():
                 output_dim=output_dim,
                 seq_len=seq_len,
                 pred_len=pred_len,
+                d_model=args.d_model,
+                num_layers=args.num_layers,
                 epochs=args.epochs,
                 lr=args.lr,
                 device=args.device,
-                model_type=args.model
+                model_type=args.model,
+                d_ff=args.d_ff
             )
             
             # Save model

@@ -33,6 +33,7 @@ class iTransformer(nn.Module):
             activation (str): Activation function.
         """
         super(iTransformer, self).__init__()
+        print(f"iTransformer initialized with d_model: {d_model}, n_heads: {n_heads}, d_ff: {d_ff}, num_layers: {num_layers}, dropout: {dropout}")
         self.seq_len = seq_len
         self.pred_len = pred_len
         self.input_dim = input_dim
@@ -68,18 +69,9 @@ class iTransformer(nn.Module):
         X, Y = batch
         return (X,), Y
 
-    def forecast(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None):
+    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """
         Forecasts the next `pred_len` values given input sequences.
-        
-        Args:
-            x_enc (torch.Tensor): Input tensor of shape (batch_size, seq_len, input_dim)
-            x_mark_enc (torch.Tensor): Optional temporal features for encoder
-            x_dec (torch.Tensor): Optional decoder input (not used in iTransformer)
-            x_mark_dec (torch.Tensor): Optional temporal features for decoder (not used in iTransformer)
-            
-        Returns:
-            torch.Tensor: Forecasted output of shape (batch_size, pred_len, output_dim)
         """
         # Normalization from Non-stationary Transformer
         means = x_enc.mean(1, keepdim=True).detach()
@@ -93,27 +85,23 @@ class iTransformer(nn.Module):
         enc_out = self.enc_embedding(x_enc, x_mark_enc)
         enc_out, attns = self.encoder(enc_out, attn_mask=None)
 
-        # Projection and transpose
         dec_out = self.projection(enc_out).permute(0, 2, 1)[:, :, :N]
-        
         # De-Normalization from Non-stationary Transformer
         dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
         dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
-        
-        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)
+        return dec_out
 
-    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None):
+    def forward(self, x_enc, x_mark_enc=None, x_dec=None, x_mark_dec=None, mask=None):
         """
-        Forward pass for time-series forecasting.
-        Compatible with CAP framework - can handle both single input and full encoder-decoder inputs.
-
-        Args:
-            x_enc: Input tensor of shape (batch_size, seq_len, input_dim)
-            x_mark_enc: Optional temporal features for encoder
-            x_dec: Optional decoder input (not used in iTransformer)
-            x_mark_dec: Optional temporal features for decoder (not used in iTransformer)
-
-        Returns:
-            Predicted output tensor of shape (batch_size, pred_len, output_dim)
+        Forward pass for long-term forecasting.
         """
-        return self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+        # Handle case where only x_enc is provided (single input)
+        if x_mark_enc is None:
+            x_mark_enc = torch.zeros_like(x_enc)
+        if x_dec is None:
+            x_dec = torch.zeros_like(x_enc)
+        if x_mark_dec is None:
+            x_mark_dec = torch.zeros_like(x_enc)
+            
+        dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+        return dec_out[:, -self.pred_len:, 0].unsqueeze(-1)  # [B, L, 1] - only first target

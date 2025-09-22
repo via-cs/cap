@@ -90,7 +90,7 @@ def test_train_lstm(dummy_data):
         output_dim=dummy_data['output_dim'],
         seq_len=dummy_data['seq_len'],
         pred_len=dummy_data['pred_len'],
-        hidden_dim=64,
+        d_model=64,
         num_layers=2,
         epochs=2,
         lr=0.001,

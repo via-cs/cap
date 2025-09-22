@@ -45,7 +45,7 @@ class FEDformer(nn.Module):
             modes (int): Number of modes to be selected.
         """
         super(FEDformer, self).__init__()
-
+        print(f"FEDformer initialized with d_model: {d_model}, n_heads: {n_heads}, d_ff: {d_ff}, e_layers: {e_layers}, d_layers: {d_layers}, dropout: {dropout}")
         self.pred_len = pred_len
         self.label_len = label_len
         self.seq_len = seq_len
@@ -151,7 +151,8 @@ class FEDformer(nn.Module):
         # Final output
         dec_out = trend_part + seasonal_part
         # print(dec_out[:, -self.pred_len:, :].shape) 
-        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Shape: (batch, pred_len, 1) - add dimension
+        # For univariate forecasting, return only the target feature (first feature)
+        return dec_out[:, -self.pred_len:, :1]  # Shape: (batch, pred_len, 1)
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """

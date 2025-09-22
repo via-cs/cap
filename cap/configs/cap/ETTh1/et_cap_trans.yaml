@@ -18,15 +18,18 @@ models:
     num_layers: 2
     dropout: 0.05
 
-  # Worker Models - based on quick_catp_test.py
+  # Worker Models - based on quick_catf_test.py
   workers:
-
+  
     - name: "Transformer"
       type: "transformer"
-      hidden_dim: 512
+      d_model: 512
       num_layers: 2
-      dropout: 0.05
+      dropout: 0.1
+      d_ff: 2048
       count: 3
+      
+
 
 # Training Configuration
 training:
@@ -40,7 +43,7 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training"
+  log_dir: "runs/etth1/trans"
   checkpoint_dir: "saved_models/et_training"
   plot_metrics: false  # No plotting for quick test
 
@@ -48,4 +51,3 @@ logging:
 hardware:
   device: "auto"  # "auto", "cuda", "cpu"
   multi_gpu: true  # Enable multi-GPU training
-

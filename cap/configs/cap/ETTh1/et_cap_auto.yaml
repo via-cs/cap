@@ -18,14 +18,15 @@ models:
     num_layers: 2
     dropout: 0.05
 
-  # Worker Models - based on quick_catp_test.py
+  # Worker Models - based on quick_catf_test.py
   workers:
   
     - name: "Autoformer"
       type: "autoformer"
-      hidden_dim: 512
+      d_model: 512
       num_layers: 2
-      dropout: 0.05
+      dropout: 0.1
+      d_ff: 2048
       count: 3
       
 
@@ -42,12 +43,11 @@ training:
   
 # Logging Configuration
 logging:
-  log_dir: "runs/et_training_multi_gpu"
-  checkpoint_dir: "saved_models/et_training_multi_gpu"
+  log_dir: "runs/etth1/auto"
+  checkpoint_dir: "saved_models/cap_training"
   plot_metrics: false
 
 # Hardware Configuration
 hardware:
   device: "auto"  # "auto", "cuda", "cpu"
   multi_gpu: true  # Enable multi-GPU training
-

@@ -88,6 +88,7 @@ class TimesNet(nn.Module):
             e_layers (int): Number of layers in TimesNet.
         """
         super(TimesNet, self).__init__()
+        print(f"TimesNet initialized with d_model: {d_model}, d_ff: {d_ff}, num_kernels: {num_kernels}, top_k: {top_k}, e_layers: {e_layers}, dropout: {dropout}")
 
         self.pred_len = pred_len
         self.label_len = label_len
@@ -117,37 +118,36 @@ class TimesNet(nn.Module):
         x_mark_enc = torch.zeros_like(X)
         return (x_enc, x_mark_enc), Y
     
-    def forecast(self, x_enc, x_mark_enc):
+    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
         """
-        Forecasts future values using TimesNet.
+        Forecasts future values using TimesNet for long-term forecasting.
         """
-        # Normalization (from Non-Stationary Transformer)
+        # Normalization from Non-stationary Transformer
         means = x_enc.mean(1, keepdim=True).detach()
-        x_enc = x_enc - means
+        x_enc = x_enc.sub(means)
         stdev = torch.sqrt(torch.var(x_enc, dim=1, keepdim=True, unbiased=False) + 1e-5)
-        x_enc /= stdev
+        x_enc = x_enc.div(stdev)
 
         # Embedding
-        enc_out = self.enc_embedding(x_enc, x_mark_enc)  # Shape: [B, T, C]
-
-        # Align Temporal Dimension
-        enc_out = self.predict_linear(enc_out.permute(0, 2, 1)).permute(0, 2, 1)
-
-        # TimesNet Processing
-        for layer in self.model:
-            enc_out = self.layer_norm(layer(enc_out))
-
-        # Projection Back
+        enc_out = self.enc_embedding(x_enc, x_mark_enc)  # [B,T,C]
+        enc_out = self.predict_linear(enc_out.permute(0, 2, 1)).permute(0, 2, 1)  # align temporal dimension
+        
+        # TimesNet
+        for i in range(len(self.model)):
+            enc_out = self.layer_norm(self.model[i](enc_out))
+        
+        # Project back
         dec_out = self.projection(enc_out)
 
-        # De-Normalization
-        dec_out = dec_out * (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
-        dec_out = dec_out + (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1))
+        # De-Normalization from Non-stationary Transformer
+        dec_out = dec_out.mul((stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1)))
+        dec_out = dec_out.add((means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len + self.seq_len, 1)))
+        
+        return dec_out
 
-        return dec_out[:, -self.pred_len:, -1].unsqueeze(-1)  # Return only the predicted part
-
-    def forward(self, x_enc, x_mark_enc):
+    def forward(self, x_enc, x_mark_enc, x_dec=None, x_mark_dec=None, mask=None):
         """
-        Forward pass for forecasting.
+        Forward pass for long-term forecasting.
         """
-        return self.forecast(x_enc, x_mark_enc)
+        dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+        return dec_out[:, -self.pred_len:, 0].unsqueeze(-1)  # [B, L, 1] - only target feature (first column)

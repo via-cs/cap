@@ -1,0 +1,39 @@
+data:
+  path: "dataset/weather/weather.csv"
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+  seq_len: 96
+  pred_len: 96
+models:
+  manager:
+    d_model: 512
+    n_heads: 8
+    d_ff: 2048
+    num_layers: 2
+    dropout: 0.05
+  workers:
+  - name: "I-Transformer"
+    d_ff: 128
+    type: "itransformer"
+    d_model: 128
+    num_layers: 2
+    dropout: 0.1
+    count: 3
+training:
+  epochs: 30
+  manager_lr: 0.00001
+  worker_lr: 0.0001
+  clip_value: 1.0
+  patience: 5
+  worker_update_steps: 2
+  pre_training_epochs: 0
+logging:
+  log_dir: "runs/et_cap"
+  checkpoint_dir: "saved_models/et_itrans"
+  plot_metrics: false
+hardware:
+  device: "auto"
+  multi_gpu: true

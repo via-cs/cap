@@ -4,26 +4,26 @@ from ..layers.Embed import DataEmbedding
 from ..utils.base import BaseTimeSeriesModel
 
 class TimeSeriesLSTM(BaseTimeSeriesModel):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers=2, dropout=0.05):
+    def __init__(self, input_dim, d_model, output_dim, num_layers=2, dropout=0.05):
         """
         LSTM model for time-series forecasting.
 
         Args:
             input_dim (int): Number of input features.
-            hidden_dim (int): Number of hidden units in LSTM.
+            d_model (int): Number of hidden units in LSTM (model dimension).
             output_dim (int): Number of output features.
             num_layers (int): Number of LSTM layers.
             dropout (float): Dropout rate.
         """
         super(TimeSeriesLSTM, self).__init__()
-        self.hidden_dim = hidden_dim
+        self.d_model = d_model
         self.num_layers = num_layers
 
         # LSTM layer with batch_first=True to accept input of shape (batch_size, seq_len, input_dim)
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
+        self.lstm = nn.LSTM(input_dim, d_model, num_layers, batch_first=True)
 
         # Fully connected output layer
-        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.fc = nn.Linear(d_model, output_dim)
 
     def prepare_batch(self, batch):
         """
@@ -43,11 +43,11 @@ class TimeSeriesLSTM(BaseTimeSeriesModel):
             torch.Tensor: Output tensor of shape (batch_size, seq_len, output_dim).
         """
         # Initialize hidden state and cell state
-        h_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim, device=x.device)
-        c_0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim, device=x.device)
+        h_0 = torch.zeros(self.num_layers, x.size(0), self.d_model, device=x.device)
+        c_0 = torch.zeros(self.num_layers, x.size(0), self.d_model, device=x.device)
 
         # LSTM forward pass
-        lstm_out, _ = self.lstm(x, (h_0, c_0))  # lstm_out: (batch_size, seq_len, hidden_dim)
+        lstm_out, _ = self.lstm(x, (h_0, c_0))  # lstm_out: (batch_size, seq_len, d_model)
         
         # Apply fully connected layer to each time step
         output = self.fc(lstm_out)  # (batch_size, seq_len, output_dim)

@@ -1,0 +1,113 @@
+# iTransformer Configuration
+# Paper: https://arxiv.org/abs/2310.06625
+
+dataset:
+  # Dataset path - uncomment the one you want to use
+  # path: "dataset/long_term_forecast/ETT-small/ETTh1.csv"
+  # path: "dataset/long_term_forecast/ETT-small/ETTh2.csv"
+  # path: "dataset/long_term_forecast/ETT-small/ETTm1.csv"
+  # path: "dataset/long_term_forecast/ETT-small/ETTm2.csv"
+  # path: "dataset/long_term_forecast/weather/weather.csv"
+  path: "dataset/long_term_forecast/exchange_rate/exchange_rate.csv"
+  
+  # Data loading parameters
+  batch_size: 32
+  train_size: 0.8
+  valid_size: 0.1
+  test_size: 0.1
+  normalization: true
+
+model:
+  # Model type
+  type: "itransformer"
+  
+  # Core model parameters
+  d_model: 128         # d_model dimension
+  seq_len: 96              # Input sequence length
+  pred_len: 96             # Prediction horizon
+  num_layers: 2            # Number of encoder layers
+  dropout: 0.1            # Dropout rate
+  
+  # Attention parameters
+  n_heads: 8               # Number of attention heads
+  d_ff: 128              # Feedforward dimension
+  factor: 3                # Attention factor for FullAttention
+  
+  # Embedding parameters
+  embed: "fixed"           # Embedding type: "fixed" or "learnable"
+  freq: "h"                # Frequency encoding: "h" for hourly, "d" for daily, etc.
+  
+  # Activation function
+  activation: "gelu"       # Activation function: "gelu" or "relu"
+
+training:
+  # Training parameters
+  epochs: 10
+  learning_rate: 0.0001
+  patience: 3            # Early stopping patience
+  device: "cuda"           # Training device: "cuda", "cpu", or "auto"
+  
+  # Optional: gradient clipping
+  # clip_grad_norm: 1.0
+
+# Experiment configuration
+experiment:
+  name: "itransformer_forecast"
+  description: "iTransformer for long-term time series forecasting"
+  
+  # Logging
+  log_dir: "runs/itransformer"
+  checkpoint_dir: "saved_models/itransformer"
+  save_best_model: true
+  
+  # Evaluation
+  evaluate_on_test: true
+  save_predictions: false
+
+# Optional: Model-specific configurations for different datasets
+# Uncomment and modify as needed
+
+# For ETT datasets (ETTh1, ETTh2, ETTm1, ETTm2)
+# model:
+#   type: "itransformer"
+#   d_model: 512
+#   seq_len: 96
+#   pred_len: 96
+#   num_layers: 2
+#   dropout: 0.1
+#   n_heads: 8
+#   d_ff: 2048
+#   factor: 5
+#   embed: "fixed"
+#   freq: "h"
+#   activation: "gelu"
+
+# For Weather dataset
+# model:
+#   type: "itransformer"
+#   d_model: 512
+#   seq_len: 96
+#   pred_len: 96
+#   num_layers: 2
+#   dropout: 0.1
+#   n_heads: 8
+#   d_ff: 2048
+#   factor: 5
+#   embed: "fixed"
+#   freq: "h"
+#   activation: "gelu"
+
+# For Electricity dataset
+# model:
+#   type: "itransformer"
+#   d_model: 512
+#   seq_len: 96
+#   pred_len: 96
+#   num_layers: 2
+#   dropout: 0.1
+#   n_heads: 8
+#   d_ff: 2048
+#   factor: 5
+#   embed: "fixed"
+#   freq: "h"
+#   activation: "gelu" 

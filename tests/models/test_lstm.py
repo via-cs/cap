@@ -6,7 +6,7 @@ def test_lstm_initialization():
     """Test if LSTM model can be initialized correctly."""
     model = TimeSeriesLSTM()  # Using default parameters
     assert isinstance(model, TimeSeriesLSTM)
-    assert model.hidden_dim == 64  # Check default hidden dimension
+    assert model.d_model == 64  # Check default model dimension
     assert model.num_layers == 2  # Check default number of layers
 
 def test_lstm_forward():
@@ -14,12 +14,12 @@ def test_lstm_forward():
     batch_size = 32
     seq_length = 100
     input_dim = 3
-    hidden_dim = 10
+    d_model = 10
     output_dim = 1
     
     model = TimeSeriesLSTM(
         input_dim=input_dim,
-        hidden_dim=hidden_dim,
+        d_model=d_model,
         output_dim=output_dim
     )
     

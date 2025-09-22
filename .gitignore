@@ -28,7 +28,7 @@ Desktop.ini
 __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
-cap.egg-info/
+catf.egg-info/
 .coverage/
 dataset/BirdMigration/
 dataset/SolarPower/

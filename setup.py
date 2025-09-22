@@ -46,9 +46,9 @@ development_requires = [
 ]
 
 setup(
-    name='cap',
-    author="Yueqiao Chen",
-    author_email='christinacyq08@gmail.com',
+    name='catf',
+    author="anonymous",
+    author_email='xxx',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
@@ -61,7 +61,7 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
-    description="CAP: A Time Series Forecasting Framework with Multiple Models",
+    description="CATF: A Manager-Worker Framework for Context-Aware Multivariate Time-Series Forecasting",
     entry_points={
         'console_scripts': [
             'cap=cap.__main__:main'
@@ -73,7 +73,7 @@ setup(
     },
     include_package_data=True,
     install_requires=install_requires,
-    keywords=['time series', 'forecasting', 'deep learning', 'transformer', 'lstm'],
+    keywords=['Time-series Forecasting', 'Context-aware Learning', 'Multivariate Time-series', 'Training Algorithm', 'Manager-Worker Architecture', 'Deep Learning'],
     license="MIT license",
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -81,7 +81,7 @@ setup(
     python_requires='>=3.8,<3.13',
     test_suite='tests',
     tests_require=tests_require,
-    url='https://github.com/via-cs/cap',
+    url='xxx',
     version='0.7.1.dev0',
     zip_safe=False,
 )
