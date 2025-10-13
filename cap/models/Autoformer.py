@@ -139,6 +139,7 @@ class Autoformer(BaseTimeSeriesModel):
 
         # Final output (trend + seasonal)
         output = trend_part[:, :, 0].unsqueeze(-1) + seasonal_part
+        print(output.shape)
         return output[:, -self.pred_len:, :]  # Match target shape
 
         

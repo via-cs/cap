@@ -27,6 +27,14 @@ from ..models.Informer    import Informer
 from ..models.FEDFormer   import FEDformer
 from ..models.TimesNet    import TimesNet
 from ..models.iTransformer import iTransformer
+from ..models.TimeXer import TimeXer
+from ..models.TimeMixer import TimeMixer
+from ..models.PatchTST import PatchTST
+from ..models.DSFormer import DSFormer
+from ..models.SimpleTM import SimpleTM
+from ..models.Crossformer import Crossformer
+from ..models.DLinear import DLinear
+from ..models.TimeLLM import TimeLLM
 
 def train_model(
     train_loader, valid_loader,
@@ -36,7 +44,8 @@ def train_model(
     lr, epochs=1, patience=5,
     device="cuda" if torch.cuda.is_available() else "cpu",
     model_type='lstm',
-    d_ff=2048
+    d_ff=2048,
+    loss_metric='mse'
 ):
     """
     Trains a time series forecasting model.
@@ -156,11 +165,128 @@ def train_model(
             num_kernels=num_kernels
         ).to(device)
 
+    # 7) TimeXer
+    elif model_type == 'timexer':
+        model = TimeXer(
+            enc_in=input_dim, 
+            seq_len=seq_len, 
+            pred_len=pred_len, 
+            use_norm = True,
+            patch_len=16,
+            d_ff=d_ff, 
+            activation='gelu', 
+            num_layers=num_layers, 
+            n_heads=8, 
+            d_model=d_model, 
+            dropout=0.1, 
+            factor=3
+        ).to(device)
+    
+    # 8) TimeMixer
+    elif model_type == 'timemixer':
+        model = TimeMixer(
+            seq_len=seq_len,
+            label_len=0, 
+            pred_len=pred_len, 
+            down_sampling_window=2, 
+            channel_independence=True, 
+            num_layers=num_layers,
+            moving_avg=25, 
+            enc_in=input_dim, 
+            d_model=d_model,
+            d_ff=d_ff, 
+            embed='fixed', 
+            freq='h', 
+            dropout=0.1, 
+            use_norm=1, 
+            down_sampling_layers=3, 
+            c_out=input_dim, 
+            down_sampling_method='avg',
+            decomp_method='moving_avg',
+            top_k=5
+        ).to(device)
+    
+    # 9) PatchTST
+    elif model_type == 'patchtst':
+        model = PatchTST(
+            seq_len=seq_len, 
+            pred_len=pred_len, 
+            d_model=d_model, 
+            dropout=0.1, 
+            factor=3, 
+            n_heads=16, 
+            d_ff=d_ff,
+            activation='gelu', 
+            num_layers=num_layers, 
+            enc_in=input_dim, 
+            patch_len=16, 
+            stride=8
+        ).to(device)
+    
+    # 10) DSFormer
+    elif model_type == 'dsformer':
+        model = DSFormer(
+            seq_len=seq_len, 
+            pred_len=pred_len, 
+            n_vars=21, 
+            num_layers=num_layers, 
+            dropout=0.1, 
+            muti_head=1, 
+            num_samp=2, 
+            IF_node=True
+        ).to(device)
+
+    # 11) SimpleTM
+    elif model_type == 'simpletm':
+        model = SimpleTM(
+            seq_len=seq_len, 
+            pred_len=pred_len,
+            d_ff=d_ff, 
+            d_model=d_model, 
+            dropout=0.1,
+            num_layers=num_layers, 
+            factor=1, 
+            dec_in=21
+        ).to(device)
+
+    # 12) Crossformer
+    elif model_type == 'crossformer':
+        model = Crossformer(
+            enc_in=input_dim, 
+            seq_len=seq_len, 
+            pred_len=pred_len,
+            num_layers=num_layers, 
+            d_model=d_model, 
+            n_heads=4, 
+            d_ff=d_ff, 
+            dropout=0.1, 
+            factor=3
+        ).to(device)
+
+    # 13) DLinear
+    elif model_type == 'dlinear':
+        model = DLinear(
+            seq_len=seq_len, 
+            pred_len=pred_len, 
+            moving_avg=25, 
+            enc_in=input_dim
+        ).to(device)
+    
+    # 14) TimeLLM
+    elif model_type == 'timellm':
+        model = TimeLLM()
+
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
     # Training setup
-    criterion = nn.MSELoss()
+    if loss_metric == 'mse':
+        criterion = nn.MSELoss()
+    elif loss_metric == 'mae':
+        criterion = nn.L1Loss()
+    else:
+        raise ValueError(f"Unknown loss metric: {loss_metric}")
+    
     optimizer = optim.Adam(model.parameters(), lr=lr, eps=1e-8)
     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
@@ -176,6 +302,7 @@ def train_model(
             optimizer.zero_grad()
             batch = tuple(b.to(device) for b in batch)
             inputs, target = model.prepare_batch(batch)
+            #print("inputs shape:", inputs.shape)
             output = model(*inputs)
             # LSTM returns full history → keep last pred_len steps
             if model_type == 'lstm':
