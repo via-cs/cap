@@ -30,8 +30,8 @@ class FlattenHead(nn.Module):
 
 class TimeLLM(BaseTimeSeriesModel):
 
-    def __init__(self, pred_len, seq_len, enc_in, d_ff, top_k, d_llm, patch_len, stride, llm_model, llm_layers, 
-                patch_len=16, prompt_domain, content, dropout, d_model, n_heads, stride=8):
+    def __init__(self, pred_len, seq_len, enc_in, d_ff, top_k, llm_dim, patch_len, stride, llm_model, llm_layers, 
+                prompt_domain, content, dropout, d_model, n_heads, stride=8):
         super(TimeLLM, self).__init__()
         self.pred_len = pred_len
         self.seq_len = seq_len

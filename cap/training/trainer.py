@@ -274,7 +274,23 @@ def train_model(
     
     # 14) TimeLLM
     elif model_type == 'timellm':
-        model = TimeLLM()
+        model = TimeLLM(
+            pred_len=pred_len, 
+            seq_len=seq_len, 
+            enc_in=input_dim, 
+            d_ff=d_ff, 
+            top_k=5, 
+            llm_dim=4086, 
+            patch_len=16, 
+            stride=8, 
+            llm_model='LLAMA', 
+            llm_layers=6, 
+            prompt_domain=0, 
+            content='Weather is recorded every 10 minutes for the 2020 whole year, which contains 21 meteorological indicators, such as air temperature, humidity, etc.', 
+            dropout=0.1, 
+            d_model=d_model, 
+            n_heads=8
+        )
 
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -308,7 +324,8 @@ def train_model(
             if model_type == 'lstm':
                 output = output[:, -pred_len:, :]
             # Fedformer & TimesNet return one channel per input feature → keep only the target (first) channel
-            elif model_type in ('fedformer', 'timesnet', 'itransformer'):
+            #elif model_type in ('fedformer', 'timesnet', 'itransformer'):
+            if output.shape[-1] > 1:
                 output = output[..., :1]
             loss = criterion(output, target)
             loss.backward()
