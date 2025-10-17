@@ -72,6 +72,21 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
     elif model_type == 'dsformer':
         model = DSFormer(seq_len=seq_len, pred_len=pred_len, n_vars=7, num_layers=1, 
                         dropout=0.15, muti_head=1, num_samp=3, IF_node=True).to(device)
+    elif model_type == 'timemixer':
+        model = TimeMixer(seq_len=seq_len, label_len=0, pred_len=pred_len, down_sampling_window=2, 
+                        channel_independence=True, num_layers=num_layers, moving_avg=25, enc_in=input_dim, 
+                        d_model=16, d_ff=32, embed='fixed', freq='h', dropout=0.1, use_norm=1, 
+                        down_sampling_layers=3, c_out=input_dim, down_sampling_method='avg',
+                        decomp_method='moving_avg', top_k=5).to(device)
+    elif model_type == 'patchtst':
+        model = PatchTST(seq_len=seq_len, pred_len=pred_len, d_model=128, dropout=0.1, 
+                        factor=3, n_heads=16, d_ff=256, activation='gelu', num_layers=num_layers, 
+                        enc_in=input_dim, patch_len=32, stride=16).to(device)
+    elif model_type == 'crossformer':
+        model = Crossformer(enc_in=input_dim, seq_len=seq_len, pred_len=pred_len, num_layers=num_layers, 
+                            d_model=256, n_heads=4, d_ff=512, dropout=0.2, factor=3).to(device)
+    elif model_type == 'dlinear':
+        model = DLinear(seq_len=seq_len, pred_len=pred_len, moving_avg=25, enc_in=input_dim).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     

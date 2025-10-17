@@ -102,7 +102,6 @@ class PatchTST(BaseTimeSeriesModel):
                   (stdev[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
         dec_out = dec_out + \
                   (means[:, 0, :].unsqueeze(1).repeat(1, self.pred_len, 1))
-        print("dec_out has shape", dec_out.shape)
         return dec_out
     
     def prepare_batch(self, batch):

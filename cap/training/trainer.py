@@ -219,8 +219,8 @@ def train_model(
             activation='gelu', 
             num_layers=num_layers, 
             enc_in=input_dim, 
-            patch_len=16, 
-            stride=8
+            patch_len=32, 
+            stride=16
         ).to(device)
     
     # 10) DSFormer
