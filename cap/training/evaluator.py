@@ -87,7 +87,7 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
     """
     model_type = model_type.lower()
     model.to(device).eval()
-    if loss_metirc == 'mse':
+    if loss_metric == 'mse':
         criterion = nn.MSELoss(reduction='mean')
     elif loss_metric == 'mae':
         criterion = nn.L1Loss(reduction='mean')
