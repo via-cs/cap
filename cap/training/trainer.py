@@ -228,11 +228,11 @@ def train_model(
         model = DSFormer(
             seq_len=seq_len, 
             pred_len=pred_len, 
-            n_vars=21, 
+            n_vars=7, 
             num_layers=num_layers, 
-            dropout=0.1, 
+            dropout=0.15, 
             muti_head=1, 
-            num_samp=2, 
+            num_samp=3, 
             IF_node=True
         ).to(device)
 
@@ -246,7 +246,7 @@ def train_model(
             dropout=0.1,
             num_layers=num_layers, 
             factor=1, 
-            dec_in=21
+            dec_in=7
         ).to(device)
 
     # 12) Crossformer
@@ -343,7 +343,8 @@ def train_model(
                 if model_type == 'lstm':
                     output = output[:, -pred_len:, :]
                 # Fedformer & TimesNet return one channel per input feature → keep only the target (first) channel
-                elif model_type in ('fedformer', 'timesnet'):
+                #elif model_type in ('fedformer', 'timesnet'):
+                if output.shape[-1] > 1:
                     output = output[..., :1]
                 valid_loss += criterion(output, target).item()
 

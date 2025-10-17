@@ -160,7 +160,7 @@ class TimeXer(BaseTimeSeriesModel):
         """
         X, Y = batch  # X: [B, seq_len, in_dim], Y: [B, pred_len, out_dim]
         x_enc = X
-        x_mark_enc =  None
+        x_mark_enc = torch.zeros_like(x_enc)
         x_mark_dec = None
         x_dec = None
 

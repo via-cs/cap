@@ -274,7 +274,7 @@ def main():
         device=config['training']['device'],
         model_type=config['model']['type'],
         d_ff=config['model'].get('d_ff', 2048),
-        loss_metric='mae'
+        loss_metric='mse'
     )
 
     # Save model
@@ -285,7 +285,7 @@ def main():
 
     # Evaluate model
     logging.info("Starting model evaluation...")
-    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'])
+    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mse')
     logging.info(f"Test MSE: {mse:.6f}")
     
     # Log results to CSV file

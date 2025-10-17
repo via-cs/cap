@@ -62,6 +62,16 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
         model = TimesNet(input_dim, seq_len, label_len=12, pred_len=pred_len, c_out=output_dim, 
                          d_model=512, embed="fixed", freq="h", dropout=0.1, d_ff=1024, 
                          num_kernels=6, top_k=5, e_layers=2, skip_normalization=True).to(device)
+    elif model_type == 'simpletm':
+        model = SimpleTM(seq_len=seq_len, pred_len=pred_len, d_ff=32, d_model=32, dropout=0.1,
+                        num_layers=1, factor=1, dec_in=7).to(device)
+    elif model_type == 'timexer':
+        model = TimeXer(enc_in=input_dim, seq_len=seq_len, pred_len=pred_len, use_norm=True, 
+                        patch_len=16, d_ff=2048, activation='gelu', num_layers=2, 
+                        n_heads=8, d_model=512, dropout=0.1, factor=3).to(device)
+    elif model_type == 'dsformer':
+        model = DSFormer(seq_len=seq_len, pred_len=pred_len, n_vars=7, num_layers=1, 
+                        dropout=0.15, muti_head=1, num_samp=3, IF_node=True).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
     
@@ -70,14 +80,19 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
     return model
 
 
-def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm"):
+def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm", loss_metric='mse'):
     """
     Evaluate a trained model on test_loader. Returns average MSE on normalized scale.
     Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, iTransformer, etc.
     """
     model_type = model_type.lower()
     model.to(device).eval()
-    criterion = nn.MSELoss(reduction='mean')
+    if loss_metirc == 'mse':
+        criterion = nn.MSELoss(reduction='mean')
+    elif loss_metric == 'mae':
+        criterion = nn.L1Loss(reduction='mean')
+    else:
+        raise ValueError(f"Unknown loss metric: {loss_metric}")
     total_loss_norm = 0.0
     # total_loss_orig = 0.0
     n_samples = 0
@@ -95,6 +110,9 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
             if model_type == 'lstm':
                 pred_len = target.shape[1]
                 output = output[:, -pred_len:, :]
+            
+            if output.shape[-1] > 1:
+                output = output[..., :1]
             
             # Note: FEDformer, iTransformer, and TimesNet already return correct shape (batch, pred_len, 1)
             # No additional slicing needed

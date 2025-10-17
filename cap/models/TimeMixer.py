@@ -281,7 +281,7 @@ class TimeMixer(BaseTimeSeriesModel):
     def prepare_batch(self, batch):
         X, Y = batch
         x_enc = X
-        x_mark_enc = None
+        x_mark_enc = torch.zeros_like(x_enc)
         x_dec = None
         x_mark_dec = None
         return (x_enc, x_mark_enc, x_dec, x_mark_dec), Y
@@ -417,5 +417,4 @@ class TimeMixer(BaseTimeSeriesModel):
 
     def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
         dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
-        print(dec_out.shape)
         return dec_out
