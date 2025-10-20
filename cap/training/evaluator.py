@@ -165,10 +165,13 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
             
             n_samples += batch_size
 
-    avg_mse_norm = total_loss_norm / n_samples
+    avg_loss_norm = total_loss_norm / n_samples
     # avg_mse_orig = total_loss_orig / n_samples
     
-    print(f"Test MSE (normalized): {avg_mse_norm:.6f}")
+    if loss_metric == 'mse':
+        print(f"Test MSE (normalized): {avg_loss_norm:.6f}")
+    elif loss_metric == 'mae':
+        print(f"Test MAE (normalized): {avg_loss_norm:.6f}")
     # print(f"Test MSE (original scale): {avg_mse_orig:.6f}")
     
     return avg_mse_norm  # Return normalized MSE

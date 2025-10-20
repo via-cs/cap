@@ -274,7 +274,7 @@ def main():
         device=config['training']['device'],
         model_type=config['model']['type'],
         d_ff=config['model'].get('d_ff', 2048),
-        loss_metric='mse'
+        loss_metric='mae'
     )
 
     # Save model
