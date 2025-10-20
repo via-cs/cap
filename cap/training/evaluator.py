@@ -174,4 +174,4 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
         print(f"Test MAE (normalized): {avg_loss_norm:.6f}")
     # print(f"Test MSE (original scale): {avg_mse_orig:.6f}")
     
-    return avg_mse_norm  # Return normalized MSE
+    return avg_loss_norm  # Return normalized MSE

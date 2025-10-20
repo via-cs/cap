@@ -285,7 +285,7 @@ def main():
 
     # Evaluate model
     logging.info("Starting model evaluation...")
-    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mse')
+    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mae')
     logging.info(f"Test MSE: {mse:.6f}")
     
     # Log results to CSV file
