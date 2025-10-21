@@ -1,5 +1,5 @@
 data:
-  path: "dataset/weather/weather.csv"
+  path: "dataset/long_term_forecast/weather/weather.csv"
   batch_size: 32
   train_size: 0.8
   valid_size: 0.1
