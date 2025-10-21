@@ -181,7 +181,7 @@ def compute_entropy(rates):
     return -np.sum(probs * np.log(probs))
 
 
-def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len):
+def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len, num_worker_models=None):
     """
     Create worker configurations from the config file, supporting multiple instances.
     
@@ -198,6 +198,7 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len):
     worker_configs = []
     worker_names = []
     
+    i = 0
     for worker_config in config['models']['workers']:
         # Base configuration
         base_config = {
@@ -207,17 +208,37 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len):
             'pred_len': pred_len,
         }
         
-        # Add worker-specific parameters
-        if 'count' in worker_config:
-            for i in range(worker_config['count']):
-                worker_configs.append({
-                    'type': worker_config['type'],
-                    'd_model': worker_config['d_model'],
-                    'num_layers': worker_config['num_layers'],
-                    'dropout': worker_config['dropout'],
-                    **base_config
-                })
+        if num_worker_models:
+            if i >= len(num_worker_models):
+                raise ValueError("--num-worker length must match the number of different worker model types")
+            cur_worker_count = num_worker_models[i]
+            i += 1
         else:
+            if 'count' in worker_config:
+                cur_worker_count = worker_config['count']
+            else:
+                cur_worker_count = 1
+
+        # Add worker-specific parameters
+        # if 'count' in worker_config:
+        #     for i in range(worker_config['count']):
+        #         worker_configs.append({
+        #             'type': worker_config['type'],
+        #             'd_model': worker_config['d_model'],
+        #             'num_layers': worker_config['num_layers'],
+        #             'dropout': worker_config['dropout'],
+        #             **base_config
+        #         })
+        # else:
+        #     worker_configs.append({
+        #         'type': worker_config['type'],
+        #         'd_model': worker_config['d_model'],
+        #         'num_layers': worker_config['num_layers'],
+        #         'dropout': worker_config['dropout'],
+        #         **base_config
+        #     })
+        
+        for i in range(cur_worker_count):
             worker_configs.append({
                 'type': worker_config['type'],
                 'd_model': worker_config['d_model'],
@@ -236,6 +257,8 @@ def main():
                        help="Path to configuration file")
     parser.add_argument("--validate-config", action="store_true",
                        help="Validate configuration and exit")
+    parser.add_argument("--num-workers", type=int, nargs='+', default=None,
+                        help="List of worker model counts")
     
     args = parser.parse_args()
     
@@ -296,7 +319,7 @@ def main():
         
         # 2. Create worker configurations
         print("  Creating worker configurations...")
-        worker_configs = create_worker_configs(config, input_dim, output_dim, seq_len, pred_len)
+        worker_configs = create_worker_configs(config, input_dim, output_dim, seq_len, pred_len, args.num_workers)
         
         # 3. Create models
         print("  Creating models...")
@@ -359,11 +382,16 @@ def main():
         
         # Create model configuration summary
         worker_configs = []
+        i = 0
         for worker_config in config['models']['workers']:
-            if 'count' in worker_config:
-                worker_configs.append(f"{worker_config['type']}x{worker_config['count']}")
+            if args.num_workers:
+                worker_configs.append(f"{worker_config['type']}x{args.num_workers[i]}")
+                i += 1
             else:
-                worker_configs.append(worker_config['type'])
+                if 'count' in worker_config:
+                    worker_configs.append(f"{worker_config['type']}x{worker_config['count']}")
+                else:
+                    worker_configs.append(worker_config['type'])
         model_config = f"Manager({config['models']['manager']['d_model']}d_{config['models']['manager']['num_layers']}l) + Workers({', '.join(worker_configs)})"
         
         # Save test loss to text file with dataset and model info
