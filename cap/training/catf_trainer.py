@@ -1064,7 +1064,7 @@ class CATFTrainer:
                 self.save_checkpoint(checkpoint_path, epoch, best_val_loss)
                 print(f"Saved checkpoint with validation loss: {best_val_loss:.4f}")
                 no_improve_count = 0
-            elif val_loss > best_val_loss and epoch > 20:
+            elif val_loss > best_val_loss and epoch > 15:
                 no_improve_count += 1
             
             # Early stopping
