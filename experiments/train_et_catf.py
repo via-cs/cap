@@ -239,7 +239,7 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len, num_
         #         **base_config
         #     })
         
-        for i in range(cur_worker_count):
+        for _ in range(cur_worker_count):
             worker_configs.append({
                 'type': worker_config['type'],
                 'd_model': worker_config['d_model'],
