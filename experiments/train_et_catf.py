@@ -207,7 +207,8 @@ def create_worker_configs(config, input_dim, output_dim, seq_len, pred_len, num_
             'seq_len': seq_len,
             'pred_len': pred_len,
         }
-        
+        print("len num_worker_models:", len(num_worker_models))
+        print(i)
         if num_worker_models:
             if i >= len(num_worker_models):
                 raise ValueError("--num-worker length must match the number of different worker model types")
