@@ -258,6 +258,7 @@ def main():
     logging.info(f"Prediction length: {pred_len}")
 
     # Train model
+    start_time = datetime.now()
     logging.info("Starting model training...")
     model = train_model(
         train_loader=train_loader,
@@ -277,6 +278,9 @@ def main():
         loss_metric='mae'
     )
 
+    end_time = datetime.now()
+    training_time = end_time - start_time
+
     # Save model
     model_path = f"saved_models/et_{config['model']['type']}_model.pth"
     os.makedirs("saved_models", exist_ok=True)
@@ -287,6 +291,7 @@ def main():
     logging.info("Starting model evaluation...")
     mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mae')
     logging.info(f"Test MSE: {mse:.6f}")
+    print(f"Training time: {training_time}")
     
     # Log results to CSV file
     log_results(config['model']['type'], mse, config, log_filename)

@@ -115,7 +115,7 @@ class EncoderLayer(nn.Module):
 
 class TimeXer(BaseTimeSeriesModel):
     def __init__(self, enc_in, seq_len, pred_len, use_norm = True, patch_len=16,
-                d_ff=2048, activation='gelu', num_layers=2, n_heads=8, d_model=512, dropout=0.1, factor=3):
+                d_ff=2048, activation='gelu', num_layers=1, n_heads=8, d_model=512, dropout=0.1, factor=3):
         super(TimeXer, self).__init__()
         self.seq_len = seq_len
         self.pred_len = pred_len
@@ -160,7 +160,7 @@ class TimeXer(BaseTimeSeriesModel):
         """
         X, Y = batch  # X: [B, seq_len, in_dim], Y: [B, pred_len, out_dim]
         x_enc = X
-        x_mark_enc = torch.zeros_like(x_enc)
+        x_mark_enc = None
         x_mark_dec = None
         x_dec = None
 

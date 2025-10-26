@@ -36,6 +36,7 @@ from ..models.Crossformer import Crossformer
 from ..models.DLinear import DLinear
 from ..models.TimeLLM import TimeLLM
 
+
 def train_model(
     train_loader, valid_loader,
     input_dim, output_dim,
