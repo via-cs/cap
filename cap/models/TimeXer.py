@@ -122,8 +122,7 @@ class TimeXer(BaseTimeSeriesModel):
         self.use_norm = use_norm
         self.patch_len = patch_len
         self.patch_num = int(seq_len // patch_len)
-        #self.n_vars = enc_in
-        self.n_vars = 1
+        self.n_vars = enc_in
         # Embedding
         self.en_embedding = EnEmbedding(self.n_vars, d_model, self.patch_len, dropout)
         self.ex_embedding = DataEmbedding_inverted(seq_len, d_model, 'fixed', 'h',
