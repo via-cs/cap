@@ -292,7 +292,7 @@ def train_model(
             dropout=0.1, 
             d_model=d_model, 
             n_heads=8
-        )。to(device)
+        ).to(device)
 
     # 15) ProtoTS
     elif model_type == 'protots':
