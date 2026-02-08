@@ -35,6 +35,7 @@ from ..models.SimpleTM import SimpleTM
 from ..models.Crossformer import Crossformer
 from ..models.DLinear import DLinear
 from ..models.TimeLLM import TimeLLM
+from ..models.ProtoTS import ProtoTS
 
 
 def train_model(
@@ -291,7 +292,18 @@ def train_model(
             dropout=0.1, 
             d_model=d_model, 
             n_heads=8
-        )
+        )。to(device)
+
+    # 15) ProtoTS
+    elif model_type == 'protots':
+        model = ProtoTS(
+            seq_len=seq_len, 
+            pred_len=pred_len, 
+            enc_in=input_dim, 
+            d_model=d_model, 
+            n_prototypes=12, 
+            d_bottle=d_model // 2
+        ).to(device)
 
     else:
         raise ValueError(f"Unknown model type: {model_type}")

@@ -18,7 +18,7 @@ from .Crossformer import Crossformer
 from .DLinear import DLinear
 
 from .TimeLLM import TimeLLM
-
+from .ProtoTS import ProtoTS
 
 __all__ = [
     'Transformer',
@@ -35,5 +35,6 @@ __all__ = [
     'SimpleTM',
     'Crossformer',
     'DLinear',
-    'TimeLLM'
+    'TimeLLM',
+    'ProtoTS'
 ] 
