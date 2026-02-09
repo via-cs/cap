@@ -35,8 +35,8 @@ class ProtoTS(BaseTimeSeriesModel):
             batch_first = True
         )
 
-        self.prototypes = nn.Parameter(torch.random(self.n_prototypes, self,d_model))
-        self.prototype_patterns = nn.Parameter(torch.random(self.n_prototypes, self.pred_len))
+        self.prototypes = nn.Parameter(torch.randn(self.n_prototypes, self.d_model))
+        self.prototype_patterns = nn.Parameter(torch.randn(self.n_prototypes, self.pred_len))
 
     def prepare_batch(self, batch):
         x_mark_enc = None
