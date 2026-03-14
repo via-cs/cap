@@ -204,7 +204,7 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
         if output_type == 'multi':
             out = []
             for t in range(s + self.seq_len, s + self.seq_len + self.pred_len):
-                out.append([self.targetp[t], *self.context[t]])
+                out.append([self.target[t], *self.context[t]])
         else:
             out = [[ self.target[t] ]
                 for t in range(s + self.seq_len,

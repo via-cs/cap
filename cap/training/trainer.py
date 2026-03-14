@@ -37,7 +37,7 @@ from ..models.DLinear import DLinear
 from ..models.TimeLLM import TimeLLM
 from ..models.ProtoTS import ProtoTS
 
-Output_type = "multi"
+output_type = "multi"
 
 
 def train_model(
