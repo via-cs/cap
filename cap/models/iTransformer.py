@@ -104,4 +104,4 @@ class iTransformer(nn.Module):
             x_mark_dec = torch.zeros_like(x_enc)
             
         dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
-        return dec_out[:, -self.pred_len:, 0].unsqueeze(-1)  # [B, L, 1] - only first target
+        return dec_out[:, -self.pred_len:, :].unsqueeze(-1)  # [B, L, 1] - only first target

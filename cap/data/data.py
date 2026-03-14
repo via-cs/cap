@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from sklearn.preprocessing import StandardScaler
 
+output_type = "multi"
 
 def calculate_borders(total_length, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1, seq_len=96):
     """
@@ -200,9 +201,14 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
             # target as first feature + all context features
             inp.append([ self.target[t-1], *self.context[t-1] ])
         # build output sequence
-        out = [[ self.target[t] ]
-               for t in range(s + self.seq_len,
-                              s + self.seq_len + self.pred_len)]
+        if output_type == 'multi':
+            out = []
+            for t in range(s + self.seq_len, s + self.seq_len + self.pred_len):
+                out.append([self.targetp[t], *self.context[t]])
+        else:
+            out = [[ self.target[t] ]
+                for t in range(s + self.seq_len,
+                                s + self.seq_len + self.pred_len)]
 
         return (
           torch.tensor(inp, dtype=torch.float32),    # [seq_len, C+1]
