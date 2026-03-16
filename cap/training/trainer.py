@@ -360,8 +360,9 @@ def train_model(
                     output = output[:, -pred_len:, :]
                 # Fedformer & TimesNet return one channel per input feature → keep only the target (first) channel
                 #elif model_type in ('fedformer', 'timesnet'):
-                if output.shape[-1] > 1:
-                    output = output[..., :1]
+                if output_type != 'multi':
+                    if output.shape[-1] > 1:
+                        output = output[..., :1]
                 valid_loss += criterion(output, target).item()
 
 

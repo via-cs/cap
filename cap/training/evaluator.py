@@ -12,6 +12,8 @@ from ..models.FEDFormer import FEDformer
 from ..models.iTransformer import iTransformer
 from ..models.TimesNet import TimesNet
 
+output_type = 'multi'
+
 
 def load_model(model_path, input_dim, output_dim, seq_len, pred_len, 
                hidden_dim=128, num_layers=2, 
@@ -126,8 +128,9 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
                 pred_len = target.shape[1]
                 output = output[:, -pred_len:, :]
             
-            if output.shape[-1] > 1:
-                output = output[..., :1]
+            if output_type != 'multi':
+                if output.shape[-1] > 1:
+                    output = output[..., :1]
             
             # Note: FEDformer, iTransformer, and TimesNet already return correct shape (batch, pred_len, 1)
             # No additional slicing needed
