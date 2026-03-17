@@ -7,7 +7,7 @@ dataset:
   # path: "dataset/long_term_forecast/ETT-small/ETTh2.csv"
   # path: "dataset/long_term_forecast/ETT-small/ETTm1.csv"
   # path: "dataset/long_term_forecast/ETT-small/ETTm2.csv"
-  path: "dataset/long_term_forecast/weather/weather.csv"
+  path: "dataset/long_term_forecast/pm25/Pm25_Riverside_final.csv"
   # path: "dataset/long_term_forecast/illness/national_illness.csv"
   
   # Data loading parameters
