@@ -1,9 +1,14 @@
 dataset:
   path: "dataset/long_term_forecast/air_quality/Aotizhongxin.csv"
   batch_size: 32
-  train_size: 0.8
+  # -- original 80/10/10 split --
+  # train_size: 0.8
+  # valid_size: 0.1
+  # test_size: 0.1
+  # -- ProtoLLM-matching 70/10/20 split --
+  train_size: 0.7
   valid_size: 0.1
-  test_size: 0.1
+  test_size: 0.2
   normalization: true
 
 model:

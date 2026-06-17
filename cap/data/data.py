@@ -194,7 +194,7 @@ class CSVSequenceDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         s = self.starts[idx]
-        
+
         # Build input sequence
         inp = []
         for t in range(s, s + self.seq_len):

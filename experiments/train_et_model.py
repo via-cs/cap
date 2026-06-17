@@ -134,8 +134,8 @@ def main():
         test_size=config['dataset']['test_size'],
         model_type=config['model']['type'],
         normalization=config['dataset'].get('normalization', True),
-        seq_len  = seq_len,
-        pred_len = pred_len
+        seq_len=seq_len,
+        pred_len=pred_len
     )
 
 
