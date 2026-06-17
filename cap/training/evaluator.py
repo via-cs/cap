@@ -11,6 +11,13 @@ from ..models.Informer import Informer
 from ..models.FEDFormer import FEDformer
 from ..models.iTransformer import iTransformer
 from ..models.TimesNet import TimesNet
+from ..models.Crossformer import Crossformer
+from ..models.DLinear import DLinear
+from ..models.TimeMixer import TimeMixer
+from ..models.PatchTST import PatchTST
+from ..models.DSFormer import DSFormer
+from ..models.SimpleTM import SimpleTM
+from ..models.TimeXer import TimeXer
 
 output_type = 'multi'
 
