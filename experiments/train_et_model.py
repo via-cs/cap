@@ -260,6 +260,8 @@ def main():
     # Train model
     start_time = datetime.now()
     logging.info("Starting model training...")
+    loss_feature_idx = config['training'].get('loss_feature_idx', None)
+
     model = train_model(
         train_loader=train_loader,
         valid_loader=valid_loader,
@@ -275,7 +277,8 @@ def main():
         device=config['training']['device'],
         model_type=config['model']['type'],
         d_ff=config['model'].get('d_ff', 2048),
-        loss_metric='mse'
+        loss_metric='mse',
+        loss_feature_idx=loss_feature_idx
     )
 
     end_time = datetime.now()
@@ -289,7 +292,7 @@ def main():
 
     # Evaluate model
     logging.info("Starting model evaluation...")
-    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mse')
+    mse = evaluate_model(model, test_loader, device=config['training']['device'], model_type=config['model']['type'], loss_metric='mse', loss_feature_idx=loss_feature_idx)
     logging.info(f"Test MSE: {mse:.6f}")
     print(f"Training time: {training_time}")
     

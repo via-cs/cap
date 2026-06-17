@@ -49,7 +49,8 @@ def train_model(
     device="cuda" if torch.cuda.is_available() else "cpu",
     model_type='lstm',
     d_ff=2048,
-    loss_metric='mse'
+    loss_metric='mse',
+    loss_feature_idx=None
 ):
     """
     Trains a time series forecasting model.
@@ -343,7 +344,11 @@ def train_model(
             if output_type != 'multi':
                 if output.shape[-1] > 1:
                     output = output[..., :1]
-            loss = criterion(output, target)
+            if loss_feature_idx is not None:
+                loss = criterion(output[..., loss_feature_idx:loss_feature_idx+1],
+                                 target[..., loss_feature_idx:loss_feature_idx+1])
+            else:
+                loss = criterion(output, target)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -363,7 +368,11 @@ def train_model(
                 if output_type != 'multi':
                     if output.shape[-1] > 1:
                         output = output[..., :1]
-                valid_loss += criterion(output, target).item()
+                if loss_feature_idx is not None:
+                    valid_loss += criterion(output[..., loss_feature_idx:loss_feature_idx+1],
+                                            target[..., loss_feature_idx:loss_feature_idx+1]).item()
+                else:
+                    valid_loss += criterion(output, target).item()
 
 
         train_loss /= len(train_loader)

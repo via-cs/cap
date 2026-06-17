@@ -104,7 +104,7 @@ def load_model(model_path, input_dim, output_dim, seq_len, pred_len,
     return model
 
 
-def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm", loss_metric='mse'):
+def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available() else "cpu", model_type="lstm", loss_metric='mse', loss_feature_idx=None):
     """
     Evaluate a trained model on test_loader. Returns average MSE on normalized scale.
     Works for LSTM, Transformer, Autoformer, Informer, FEDformer, TimesNet, iTransformer, etc.
@@ -138,13 +138,17 @@ def evaluate_model(model, test_loader, device="cuda" if torch.cuda.is_available(
             if output_type != 'multi':
                 if output.shape[-1] > 1:
                     output = output[..., :1]
-            
+
             # Note: FEDformer, iTransformer, and TimesNet already return correct shape (batch, pred_len, 1)
             # No additional slicing needed
 
-            # compute MSE on normalized data
+            # compute MSE on normalized data (optionally restricted to a single feature)
             batch_size = target.size(0)
-            loss_norm = criterion(output, target) * batch_size
+            if loss_feature_idx is not None:
+                loss_norm = criterion(output[..., loss_feature_idx:loss_feature_idx+1],
+                                      target[..., loss_feature_idx:loss_feature_idx+1]) * batch_size
+            else:
+                loss_norm = criterion(output, target) * batch_size
             total_loss_norm += loss_norm.item()
             
             # # compute MSE on original scale data
